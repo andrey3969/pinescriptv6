@@ -1,0 +1,186 @@
+//@version=6
+// ─────────────────────────────────────────────────────────────────────────────
+//  MNQ Research Lab — Opening-Range & Session Behaviour Study
+//
+//  A research instrument for the Micro E-mini Nasdaq-100 (MNQ). It is not a
+//  signal generator: it *measures* how the regular-session opening range breaks
+//  and how far price actually travels afterwards, then accumulates those
+//  outcomes into a running statistics dashboard.
+//
+//  For every RTH session it:
+//    1. Builds the opening range (first N minutes) and locks it.
+//    2. Records the first break of that range (direction + level).
+//    3. Tracks the post-break maximum favourable / adverse excursion (MFE/MAE)
+//       and whether a configurable target was reached before the close.
+//    4. Rolls the results into hit-rate, average travel, and RTH-range stats,
+//       shown in both index points and MNQ dollars ($2 / point / contract).
+// ─────────────────────────────────────────────────────────────────────────────
+indicator("MNQ Research Lab", shorttitle = "MNQ Research", overlay = true,
+          max_labels_count = 200, max_lines_count = 200)
+
+// ── Inputs ───────────────────────────────────────────────────────────────────
+grpSess = "Session (RTH)"
+rthSess = input.session("0930-1600", "RTH Session",       group = grpSess)
+tz      = input.string("America/New_York", "Session Timezone",
+          options = ["America/New_York", "America/Chicago", "UTC",
+                     "Europe/London", "syminfo"], group = grpSess)
+
+grpOR   = "Opening Range"
+orMin   = input.int(30, "Opening Range (minutes)", minval = 1, group = grpOR)
+
+grpRes  = "Research"
+targetPts = input.float(50.0, "Target (points)",  minval = 0.0, step = 1.0, group = grpRes)
+ptValue   = input.float(2.0,  "$ / point / contract (MNQ = $2)",
+            minval = 0.0, step = 0.5, group = grpRes)
+
+grpViz  = "Display"
+showOR  = input.bool(true, "Draw Opening Range", group = grpViz)
+showMk  = input.bool(true, "Mark Breakouts",     group = grpViz)
+showTbl = input.bool(true, "Show Stats Table",   group = grpViz)
+
+// ── Session detection ────────────────────────────────────────────────────────
+tzUsed    = tz == "syminfo" ? syminfo.timezone : tz
+inRTH     = not na(time(timeframe.period, rthSess, tzUsed))
+sessOpen  = inRTH and not inRTH[1]
+sessClose = not inRTH and inRTH[1]
+
+// ── Per-session state ────────────────────────────────────────────────────────
+var float orHigh    = na
+var float orLow     = na
+var int   openTs    = na
+var bool  orLocked  = false
+var bool  broke     = false
+var int   dir       = 0          // 1 = up break, -1 = down break
+var float brkLevel  = na
+var float mfe       = 0.0        // max favourable excursion (points)
+var float mae       = 0.0        // max adverse excursion (points)
+var bool  hitTarget = false
+var float sessHi    = na
+var float sessLo    = na
+
+// ── Cumulative research stats ────────────────────────────────────────────────
+var int   nSessDone = 0
+var int   nBreaks   = 0
+var int   nUp       = 0
+var int   nDn       = 0
+var int   nHits     = 0
+var float sumMfe    = 0.0
+var float sumMae    = 0.0
+var float sumRange  = 0.0
+
+// ── New session: reset the per-session accumulators ──────────────────────────
+if sessOpen
+    orHigh    := high
+    orLow     := low
+    openTs    := time
+    orLocked  := false
+    broke     := false
+    dir       := 0
+    brkLevel  := na
+    mfe       := 0.0
+    mae       := 0.0
+    hitTarget := false
+    sessHi    := high
+    sessLo    := low
+
+// ── Inside the session: build OR, detect break, track excursions ─────────────
+if inRTH and not na(openTs)
+    sessHi := math.max(sessHi, high)
+    sessLo := math.min(sessLo, low)
+
+    // Extend the opening range until the OR window elapses, then lock it.
+    inORWindow = (time - openTs) < orMin * 60000
+    if inORWindow
+        orHigh := math.max(orHigh, high)
+        orLow  := math.min(orLow,  low)
+    else if not orLocked
+        orLocked := true
+
+    // First break of the locked range wins; up takes priority on a two-sided bar.
+    if orLocked and not broke
+        if high > orHigh
+            broke    := true
+            dir      := 1
+            brkLevel := orHigh
+        else if low < orLow
+            broke    := true
+            dir      := -1
+            brkLevel := orLow
+        if broke
+            nBreaks += 1
+            nUp     += dir ==  1 ? 1 : 0
+            nDn     += dir == -1 ? 1 : 0
+
+    // After the break, measure how far price runs for / against the direction.
+    if broke
+        favor = dir == 1 ? high - brkLevel : brkLevel - low
+        adver = dir == 1 ? brkLevel - low  : high - brkLevel
+        mfe := math.max(mfe, favor)
+        mae := math.max(mae, adver)
+        if not hitTarget and targetPts > 0 and favor >= targetPts
+            hitTarget := true
+
+// ── Session close: fold this session into the running totals ─────────────────
+if sessClose and not na(sessHi)
+    nSessDone += 1
+    sumRange  += sessHi - sessLo
+    if broke
+        sumMfe += mfe
+        sumMae += mae
+        nHits  += hitTarget ? 1 : 0
+
+// ── Plot the opening range ───────────────────────────────────────────────────
+orVisible = showOR and inRTH and not na(orHigh)
+plot(orVisible ? orHigh : na, "OR High", color = color.new(color.teal, 0),
+     style = plot.style_linebr, linewidth = 2)
+plot(orVisible ? orLow  : na, "OR Low",  color = color.new(color.red,  0),
+     style = plot.style_linebr, linewidth = 2)
+bgcolor(inRTH ? color.new(color.blue, 94) : na, title = "RTH")
+
+// ── Mark the breakout bar ────────────────────────────────────────────────────
+brokeNow = broke and not broke[1]
+if showMk and brokeNow
+    label.new(bar_index, brkLevel,
+              dir == 1 ? "▲ break" : "▼ break",
+              style     = dir == 1 ? label.style_label_up : label.style_label_down,
+              color     = dir == 1 ? color.teal : color.red,
+              textcolor = color.white, size = size.small)
+
+// ── Derived statistics ───────────────────────────────────────────────────────
+avgMfe   = nBreaks   > 0 ? sumMfe   / nBreaks   : 0.0
+avgMae   = nBreaks   > 0 ? sumMae   / nBreaks   : 0.0
+avgRange = nSessDone > 0 ? sumRange / nSessDone : 0.0
+hitRate  = nBreaks   > 0 ? nHits / nBreaks * 100.0 : 0.0
+brkRate  = nSessDone > 0 ? nBreaks / nSessDone * 100.0 : 0.0
+
+// Format a points value together with its MNQ dollar equivalent.
+ptsDol(float pts) =>
+    str.tostring(pts, "#.0") + " pt  ($" + str.tostring(pts * ptValue, "#") + ")"
+
+// ── Research dashboard ───────────────────────────────────────────────────────
+var table tbl = table.new(position.top_right, 2, 8, border_width = 1,
+                          frame_color = color.new(color.gray, 50), frame_width = 1)
+if showTbl and barstate.islast
+    hdrBg = color.new(color.black, 20)
+    table.cell(tbl, 0, 0, "MNQ Research", text_color = color.white, bgcolor = hdrBg)
+    table.cell(tbl, 1, 0, str.tostring(nSessDone) + " sess", text_color = color.white, bgcolor = hdrBg)
+    table.cell(tbl, 0, 1, "Breakouts",   text_color = color.white)
+    table.cell(tbl, 1, 1, str.tostring(nBreaks) + "  (" + str.tostring(brkRate, "#") + "%)", text_color = color.gray)
+    table.cell(tbl, 0, 2, "Up / Down",   text_color = color.white)
+    table.cell(tbl, 1, 2, str.tostring(nUp) + " ▲ / " + str.tostring(nDn) + " ▼", text_color = color.gray)
+    table.cell(tbl, 0, 3, "Target hit",  text_color = color.white)
+    table.cell(tbl, 1, 3, str.tostring(hitRate, "#.0") + "%  (" + str.tostring(targetPts, "#") + " pt)",
+               text_color = hitRate >= 50 ? color.teal : color.red)
+    table.cell(tbl, 0, 4, "Avg MFE",     text_color = color.white)
+    table.cell(tbl, 1, 4, ptsDol(avgMfe), text_color = color.teal)
+    table.cell(tbl, 0, 5, "Avg MAE",     text_color = color.white)
+    table.cell(tbl, 1, 5, ptsDol(avgMae), text_color = color.red)
+    table.cell(tbl, 0, 6, "Avg RTH range", text_color = color.white)
+    table.cell(tbl, 1, 6, ptsDol(avgRange), text_color = color.gray)
+    table.cell(tbl, 0, 7, "Edge (MFE−MAE)", text_color = color.white)
+    table.cell(tbl, 1, 7, ptsDol(avgMfe - avgMae),
+               text_color = avgMfe - avgMae >= 0 ? color.teal : color.red)
+
+// ── Alerts ───────────────────────────────────────────────────────────────────
+alertcondition(brokeNow and dir ==  1, "MNQ OR Break Up",   "MNQ opening range broke UP")
+alertcondition(brokeNow and dir == -1, "MNQ OR Break Down", "MNQ opening range broke DOWN")
