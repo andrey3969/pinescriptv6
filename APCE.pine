@@ -1,0 +1,152 @@
+//@version=6
+// ─────────────────────────────────────────────────────────────────────────────
+//  APCE — Adaptive Price Cycle Engine
+//
+//  APCE estimates the market's *dominant cycle* on the fly and reads price
+//  through that lens, adapting all of its smoothing to the measured cycle
+//  length instead of a fixed period.
+//
+//  Three ideas drive it:
+//    1. Cycle length  — the distance between zero crossings of a detrended
+//                       price series gives an adaptive estimate of the
+//                       prevailing cycle (clamped to a sane range).
+//    2. Cycle phase   — detrended price, adaptively smoothed and self-scaled,
+//                       becomes a normalized −100…+100 oscillator.
+//    3. Superiority   — how much of the price movement the clean cycle
+//                       explains versus residual noise (0…100). A high
+//                       "superiority" means the cycle is worth trading; a low
+//                       one means the tape is choppy and signals are muted.
+//
+//  Signals fire on cycle turns (exiting overbought / oversold) but only when
+//  the cycle is dominant enough to trust.
+// ─────────────────────────────────────────────────────────────────────────────
+indicator("APCE — Adaptive Price Cycle Engine", shorttitle = "APCE", overlay = false, max_labels_count = 100)
+
+// ── Inputs ───────────────────────────────────────────────────────────────────
+grpCycle    = "Cycle Engine"
+src         = input.source(close, "Source",                                   group = grpCycle)
+detrendLen  = input.int(40,  "Detrend Baseline", minval = 5,                  group = grpCycle)
+minCycle    = input.int(8,   "Min Cycle Length", minval = 4,                  group = grpCycle)
+maxCycle    = input.int(60,  "Max Cycle Length", minval = 10,                 group = grpCycle)
+smoothFrac  = input.float(0.5, "Adaptive Smoothing", minval = 0.1, maxval = 1.0, step = 0.05, group = grpCycle)
+sens        = input.float(1.0, "Sensitivity",        minval = 0.2, maxval = 3.0, step = 0.1,  group = grpCycle)
+
+grpSig      = "Signals"
+obLevel     = input.float(60.0, "Overbought Level",  minval = 10.0, maxval = 100.0, group = grpSig)
+superThresh = input.float(55.0, "Min Cycle Superiority", minval = 0.0, maxval = 100.0, group = grpSig)
+outSmooth   = input.int(2,   "Output Smoothing", minval = 1, maxval = 10,     group = grpSig)
+
+grpUI       = "Display"
+showLabels  = input.bool(true, "Show Signal Labels", group = grpUI)
+showTable   = input.bool(true, "Show Status Table",  group = grpUI)
+
+osLevel = -obLevel
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+// Clamp a value into [lo, hi].
+clampv(float x, float lo, float hi) =>
+    math.max(lo, math.min(hi, x))
+
+// EMA with a *series* length. The built-in ta.ema wants a constant length, so
+// we roll our own from the alpha recursion — this lets the smoothing breathe
+// with the measured cycle. Each call site keeps its own independent state.
+adaptiveEma(float source, float len) =>
+    float a = 2.0 / (math.max(1.0, len) + 1.0)
+    float e = na
+    e := na(e[1]) ? source : a * source + (1.0 - a) * e[1]
+    e
+
+// Smooth map of x → (−100, 100) via scaled tanh, with overflow guards so a
+// runaway input can't produce na.
+squash(float x) =>
+    float t = x >  20.0 ?  1.0 :
+              x < -20.0 ? -1.0 :
+              (math.exp(2.0 * x) - 1.0) / (math.exp(2.0 * x) + 1.0)
+    100.0 * t
+
+// ── Dominant cycle estimate ──────────────────────────────────────────────────
+// Detrend price against a slow baseline, then measure the bar-distance between
+// sign changes. Two half-cycles ≈ one full cycle.
+float baseline = ta.ema(src, detrendLen)
+float detr     = src - baseline
+
+bool crossed = (detr > 0.0) != (detr[1] > 0.0)
+var int   cnt     = 0
+var float halfEma = na
+cnt += 1
+if crossed
+    halfEma := na(halfEma) ? float(cnt) : 0.3 * float(cnt) + 0.7 * halfEma
+    cnt := 0
+
+float periodRaw = na(halfEma) ? float(minCycle + maxCycle) / 2.0 : 2.0 * halfEma
+float period    = clampv(periodRaw, float(minCycle), float(maxCycle))
+
+// ── Cycle phase oscillator ───────────────────────────────────────────────────
+// Adaptively smooth the detrended series, then self-scale it by its own typical
+// swing size so the oscillator is comparable across symbols and timeframes.
+float smoothed = adaptiveEma(detr, math.max(2.0, period * smoothFrac))
+float ampScale = adaptiveEma(math.abs(detr), period)
+float oscRaw   = ampScale > 0.0 ? smoothed / (ampScale * sens) : 0.0
+float osc      = adaptiveEma(squash(oscRaw), float(outSmooth))
+
+// ── Cycle superiority (signal-to-noise) ──────────────────────────────────────
+// Amplitude of the clean cycle versus the leftover residual. 0 = pure noise,
+// 100 = the cycle explains everything.
+float resid       = detr - smoothed
+float cycleAmp    = adaptiveEma(math.abs(smoothed), period)
+float noiseAmp    = adaptiveEma(math.abs(resid),    period)
+float superiority = (cycleAmp + noiseAmp) > 0.0 ? 100.0 * cycleAmp / (cycleAmp + noiseAmp) : 0.0
+bool  trusted     = superiority >= superThresh
+
+// ── Signals ──────────────────────────────────────────────────────────────────
+// Turns confirmed only while the cycle is dominant enough to trust.
+bool longSig  = ta.crossover(osc,  osLevel) and trusted
+bool shortSig = ta.crossunder(osc, obLevel) and trusted
+
+string bias =
+      osc >= obLevel ? "OVERBOUGHT" :
+      osc <= osLevel ? "OVERSOLD"   :
+      osc >= 0.0     ? "RISING"     : "FALLING"
+
+// ── Plotting ─────────────────────────────────────────────────────────────────
+colUp = color.teal
+colDn = color.red
+
+// Fade the oscillator by how untrustworthy the cycle is: dominant cycle = solid,
+// noisy tape = faint.
+int   fade     = int(math.round(clampv(85.0 - superiority * 0.85, 0.0, 85.0)))
+color oscColor = color.new(osc >= 0.0 ? colUp : colDn, fade)
+
+plot(osc, "APCE Score", color = oscColor, linewidth = 2)
+hline( obLevel, "Overbought", color = color.new(color.red,  60), linestyle = hline.style_dashed)
+hline( osLevel, "Oversold",   color = color.new(color.teal, 60), linestyle = hline.style_dashed)
+hline(0, "Zero", color = color.new(color.gray, 70))
+
+bgcolor(trusted ? color.new(color.blue, 92) : na, title = "Cycle Trusted")
+
+// Mark confirmed cycle turns.
+if showLabels and longSig
+    label.new(bar_index, osc, "▲", style = label.style_label_up,
+              color = color.new(colUp, 0), textcolor = color.white, size = size.small)
+if showLabels and shortSig
+    label.new(bar_index, osc, "▼", style = label.style_label_down,
+              color = color.new(colDn, 0), textcolor = color.white, size = size.small)
+
+// ── Status table ─────────────────────────────────────────────────────────────
+var table tbl = table.new(position.top_right, 2, 5, border_width = 1)
+if showTable and barstate.islast
+    color biasCol = bias == "OVERBOUGHT" or bias == "FALLING" ? colDn : bias == "OVERSOLD" or bias == "RISING" ? colUp : color.gray
+    table.cell(tbl, 0, 0, "Phase",       text_color = color.white, bgcolor = color.new(color.black, 30))
+    table.cell(tbl, 1, 0, bias,          text_color = biasCol,     bgcolor = color.new(color.black, 30))
+    table.cell(tbl, 0, 1, "Score",       text_color = color.white)
+    table.cell(tbl, 1, 1, str.tostring(osc, "#.0"),         text_color = biasCol)
+    table.cell(tbl, 0, 2, "Superiority", text_color = color.white)
+    table.cell(tbl, 1, 2, str.tostring(superiority, "0") + "%", text_color = trusted ? colUp : color.gray)
+    table.cell(tbl, 0, 3, "Cycle",       text_color = color.white)
+    table.cell(tbl, 1, 3, str.tostring(period, "0") + " bars", text_color = color.gray)
+    table.cell(tbl, 0, 4, "Trusted",     text_color = color.white)
+    table.cell(tbl, 1, 4, trusted ? "YES" : "NO", text_color = trusted ? colUp : colDn)
+
+// ── Alerts ───────────────────────────────────────────────────────────────────
+alertcondition(longSig,  "APCE Long",  "APCE — bullish cycle turn (superiority confirmed)")
+alertcondition(shortSig, "APCE Short", "APCE — bearish cycle turn (superiority confirmed)")
