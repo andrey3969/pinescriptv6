@@ -21,6 +21,8 @@ node cli.js evaluate    # walk-forward accuracy of every model
 node cli.js scan        # calendar and game-order rule families vs. shuffled seasons
 node cli.js predict     # next game's win probability + where the named rules can fire this season
 node cli.js ledger      # score the rules in ledger.json only on games after they were written down
+node cli.js crossteam   # the rules on the other 31 teams, and every team's own rules found in
+                        # 1999-2012 scored on 2013-2025, against shuffles and the point spread
 node cli.js query --lag 28 --mid 10          # every game with games 28 and 10 days before it
 node cli.js query --gap 10 --position 4      # every game 10 days after the last one vs. the 4th-previous
 node cli.js query --gap 10 --position 4 --same-season   # same, all games in one season
@@ -46,6 +48,7 @@ Common options: `--team SEA --from 1999 --to 2025 --test-from 2004 --seeds 5 --w
 | Do the rules hold up going forward? | `ledger.json` records each rule with the date it was written down; `node cli.js ledger` scores it only on later games. |
 | Do specific intervals repeat or reverse? | Same-result rates for every interval 1–400 days and every back-to-back gap, with false-discovery-rate correction. |
 | Does each team have its own pattern? | The scan and the network for all 32 franchises. |
+| Do the patterns hold on fresh data? | `crossteam`: Seattle's rules on the other 31 teams; each team's best and near-perfect rules found in 1999–2012, scored on 2013–2025; all against shuffles and the point spread. |
 
 ## Layout
 
@@ -58,6 +61,7 @@ src/models.js       baselines and walk-forward evaluation
 src/rules.js        the hand-found rules (28/10 calendar rule, 10-day game-order rule)
 src/scan.js         interval scans and rule-family scans against shuffled seasons
 src/ledger.js       forward scoring of the rules in ledger.json
+src/crossteam.js    out-of-sample tests on other teams and later seasons
 src/jobs.js         runs shuffles / teams across worker threads
 src/pipeline.js     the full analysis; src/report.js renders REPORT.md
 src/pdf.js          the PDF analysis (HTML + inline SVG charts, printed with Chromium)

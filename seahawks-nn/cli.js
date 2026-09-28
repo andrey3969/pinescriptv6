@@ -2,6 +2,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { crossTeamAll } from './src/crossteam.js';
 import { toCsv } from './src/csv.js';
 import { allTeams, isDecided, loadGames, resultChar, teamSchedule } from './src/data.js';
 import { loadLedger, scoreLedger } from './src/ledger.js';
@@ -26,6 +27,8 @@ const USAGE = `Seattle Seahawks pattern network (works for any team code)
   node cli.js scan       calendar and game-order rule scans against shuffled seasons
   node cli.js predict    next game + upcoming calls of the named rules
   node cli.js ledger     score registered rules (ledger.json) on games after their date
+  node cli.js crossteam  test the rules on the other 31 teams, and each team's own best
+                         rule found in 1999-2012 on 2013-2025
   node cli.js query --lag 28 --mid 10     every game with games 28 and 10 days before
   node cli.js query --gap 10 --position 4 [--same-season]
                                           every game 10 days after the last one, compared
@@ -147,6 +150,36 @@ function predict() {
   }
 }
 
+function crossteam() {
+  const started = Date.now();
+  const X = crossTeamAll(loadGames(), { team: opts.team, from: opts.from, to: opts.to, nPerm: opts.scanPerms, rules: RULES });
+  const line = (label, r) =>
+    console.log(
+      `  ${label.padEnd(44)} ${String(`${r.hits}/${r.n}`).padStart(8)}  ${pct(r.rate).padStart(6)}   shuffled ${pct(r.shuffledRate)} (p=${r.pShuffle.toFixed(2)})` +
+        `   market expected ${pct(r.marketExpected / r.n)} (z=${r.z.toFixed(2)})   Vegas favorite ${pct(r.favorite.hits / r.favorite.n)} of ${r.favorite.n} games`,
+    );
+  console.log(`1) ${opts.team}'s rules, unchanged, on the other ${31} teams (${opts.from}-${opts.to})`);
+  for (const r of X.rulesOnOthers) line(RULES[r.id].label, r);
+  line('10-day, 4th-previous, same season only', X.sameSeasonOnOthers);
+  const s = X.splitHalf;
+  console.log(`\n2) every team's best rules found in ${s.window.searchFrom}-${s.window.searchTo}, scored on ${s.window.testFrom}-${s.window.testTo}`);
+  console.log(`  in the seasons they were found in: ${s.searchHits}/${s.searchN} (${pct(s.searchRate)})`);
+  line(`on the later seasons (${s.rulesFound} rules)`, s);
+  const st = X.splitHalfStrong;
+  console.log(`\n   every rule that was 90%+ right or wrong in ${st.window.searchFrom}-${st.window.searchTo} (${st.rulesFound} rules, all teams)`);
+  console.log(`  in the seasons they were found in: ${st.searchHits}/${st.searchN} (${pct(st.searchRate)})`);
+  line('on the later seasons', st);
+  console.log('\n3) equal-period stretches, all teams: does the last game repeat the first?');
+  for (const e of X.equalGaps) {
+    const mk = e.market && e.market.n ? `, market expected ${pct(e.market.marketExpected / e.market.n)} (z=${e.market.z.toFixed(2)})` : '';
+    console.log(
+      `  ${e.gap} x ${e.count} = ${e.gap * e.count} days: ${e.stretches} stretches, ${e.hits}/${e.n} repeated (${pct(e.rate)}), shuffled ${pct(e.shuffledRate)}, p=${e.p.toFixed(2)}${mk}`,
+    );
+  }
+  if (args.json) writeFileSync(join(HERE, 'results', 'crossteam.json'), JSON.stringify(X, null, 2) + '\n');
+  console.error(`\n(${((Date.now() - started) / 1000).toFixed(0)}s, ${opts.scanPerms} shuffles)`);
+}
+
 function ledger() {
   const games = loadGames();
   for (const r of scoreLedger(games, loadLedger())) {
@@ -249,7 +282,7 @@ function query() {
   console.log(`\n${opts.from}-${opts.to}, games ${lag} days apart${args.consecutive ? ' (back-to-back only)' : ''}: ${rep} repetitions, ${rev} reversals`);
 }
 
-const COMMANDS = { report, render, pdf, evaluate, scan, predict, ledger, query };
+const COMMANDS = { report, render, pdf, evaluate, scan, predict, ledger, crossteam, query };
 if (!COMMANDS[cmd]) {
   console.log(USAGE);
   process.exit(cmd ? 1 : 0);

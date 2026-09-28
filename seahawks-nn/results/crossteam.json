@@ -1,0 +1,962 @@
+{
+  "market": {
+    "b": 0.140982578553314,
+    "games": 7307
+  },
+  "rulesOnOthers": [
+    {
+      "id": "rule_28_10",
+      "rule": {
+        "type": "calendar",
+        "d1": 28,
+        "d2": 10,
+        "label": "28/10-day rule"
+      },
+      "n": 198,
+      "hits": 118,
+      "marketExpected": 114.08090405021565,
+      "z": 0.6078606603776859,
+      "favorite": {
+        "n": 198,
+        "hits": 131,
+        "agreesWithRule": 127
+      },
+      "rate": 0.5959595959595959,
+      "shuffledRate": 0.5717691116118677,
+      "pShuffle": 0.25487256371814093
+    },
+    {
+      "id": "rule_gap10_k4",
+      "rule": {
+        "type": "order",
+        "gap": 10,
+        "k": 4,
+        "sameSeason": false,
+        "label": "10-day gap, 4th-previous rule"
+      },
+      "n": 289,
+      "hits": 173,
+      "marketExpected": 169.64863585930473,
+      "z": 0.43337809786149684,
+      "favorite": {
+        "n": 288,
+        "hits": 192,
+        "agreesWithRule": 191
+      },
+      "rate": 0.5986159169550173,
+      "shuffledRate": 0.5694068007572467,
+      "pShuffle": 0.1504247876061969
+    }
+  ],
+  "sameSeasonOnOthers": {
+    "rule": {
+      "type": "order",
+      "gap": 10,
+      "k": 4,
+      "sameSeason": true
+    },
+    "n": 241,
+    "hits": 145,
+    "marketExpected": 141.62718001427754,
+    "z": 0.47763540952102673,
+    "favorite": {
+      "n": 240,
+      "hits": 159,
+      "agreesWithRule": 158
+    },
+    "rate": 0.6016597510373444,
+    "shuffledRate": 0.5662246060046034,
+    "pShuffle": 0.13393303348325838
+  },
+  "splitHalf": {
+    "window": {
+      "searchFrom": 1999,
+      "searchTo": 2012,
+      "testFrom": 2013,
+      "testTo": 2025
+    },
+    "rulesFound": 64,
+    "searchRate": 0.6750647515893572,
+    "searchHits": 2867,
+    "searchN": 4247,
+    "n": 3806,
+    "hits": 2212,
+    "marketExpected": 2181.323210554256,
+    "z": 1.0844862952271037,
+    "favorite": {
+      "n": 3174,
+      "hits": 2123,
+      "agreesWithRule": 2067
+    },
+    "rate": 0.581187598528639,
+    "shuffledRate": 0.5703832408556536,
+    "pShuffle": 0.08195902048975512,
+    "perTeam": [
+      {
+        "team": "ARI",
+        "rules": [
+          {
+            "rule": "21 & 14 days",
+            "direction": "repeat",
+            "search": "46/72",
+            "test": "34/53"
+          },
+          {
+            "rule": "7-day gap, 6th previous",
+            "direction": "repeat",
+            "search": "57/93",
+            "test": "44/70"
+          }
+        ]
+      },
+      {
+        "team": "ATL",
+        "rules": [
+          {
+            "rule": "56 & 21 days",
+            "direction": "repeat",
+            "search": "30/41",
+            "test": "12/25"
+          },
+          {
+            "rule": "any gap, 3rd previous, same season",
+            "direction": "repeat",
+            "search": "59/101",
+            "test": "53/96"
+          }
+        ]
+      },
+      {
+        "team": "BAL",
+        "rules": [
+          {
+            "rule": "49 & 35 days",
+            "direction": "repeat",
+            "search": "34/46",
+            "test": "17/33"
+          },
+          {
+            "rule": "7-day gap, 5th previous",
+            "direction": "repeat",
+            "search": "52/86",
+            "test": "31/64"
+          }
+        ]
+      },
+      {
+        "team": "BUF",
+        "rules": [
+          {
+            "rule": "35 & 21 days",
+            "direction": "repeat",
+            "search": "39/56",
+            "test": "24/41"
+          },
+          {
+            "rule": "any gap, 4th previous",
+            "direction": "repeat",
+            "search": "64/113",
+            "test": "61/122"
+          }
+        ]
+      },
+      {
+        "team": "CAR",
+        "rules": [
+          {
+            "rule": "21 & 14 days",
+            "direction": "repeat",
+            "search": "50/73",
+            "test": "39/61"
+          },
+          {
+            "rule": "7-day gap, 2nd previous",
+            "direction": "repeat",
+            "search": "61/96",
+            "test": "52/80"
+          }
+        ]
+      },
+      {
+        "team": "CHI",
+        "rules": [
+          {
+            "rule": "21 & 7 days",
+            "direction": "repeat",
+            "search": "32/49",
+            "test": "24/41"
+          },
+          {
+            "rule": "any gap, 3rd previous",
+            "direction": "repeat",
+            "search": "70/114",
+            "test": "67/111"
+          }
+        ]
+      },
+      {
+        "team": "CIN",
+        "rules": [
+          {
+            "rule": "49 & 7 days",
+            "direction": "repeat",
+            "search": "34/51",
+            "test": "24/40"
+          },
+          {
+            "rule": "any gap, 7th previous",
+            "direction": "repeat",
+            "search": "74/116",
+            "test": "61/107"
+          }
+        ]
+      },
+      {
+        "team": "CLE",
+        "rules": [
+          {
+            "rule": "63 & 42 days",
+            "direction": "repeat",
+            "search": "29/35",
+            "test": "26/36"
+          },
+          {
+            "rule": "any gap, 8th previous, same season",
+            "direction": "repeat",
+            "search": "42/61",
+            "test": "45/70"
+          }
+        ]
+      },
+      {
+        "team": "DAL",
+        "rules": [
+          {
+            "rule": "35 & 7 days",
+            "direction": "reverse",
+            "search": "21/30",
+            "test": "19/32"
+          },
+          {
+            "rule": "7-day gap, 6th previous",
+            "direction": "reverse",
+            "search": "38/60",
+            "test": "28/61"
+          }
+        ]
+      },
+      {
+        "team": "DEN",
+        "rules": [
+          {
+            "rule": "63 & 42 days",
+            "direction": "repeat",
+            "search": "20/30",
+            "test": "16/28"
+          },
+          {
+            "rule": "7-day gap, 3rd previous",
+            "direction": "repeat",
+            "search": "40/69",
+            "test": "42/69"
+          }
+        ]
+      },
+      {
+        "team": "DET",
+        "rules": [
+          {
+            "rule": "49 & 21 days",
+            "direction": "repeat",
+            "search": "35/46",
+            "test": "20/32"
+          },
+          {
+            "rule": "any gap, 2nd previous",
+            "direction": "repeat",
+            "search": "98/139",
+            "test": "67/116"
+          }
+        ]
+      },
+      {
+        "team": "GB",
+        "rules": [
+          {
+            "rule": "63 & 28 days",
+            "direction": "repeat",
+            "search": "23/30",
+            "test": "16/29"
+          },
+          {
+            "rule": "any gap, 6th previous, same season",
+            "direction": "repeat",
+            "search": "58/87",
+            "test": "43/81"
+          }
+        ]
+      },
+      {
+        "team": "HOU",
+        "rules": [
+          {
+            "rule": "63 & 21 days",
+            "direction": "repeat",
+            "search": "24/35",
+            "test": "18/31"
+          },
+          {
+            "rule": "any gap, 7th previous, same season",
+            "direction": "repeat",
+            "search": "36/56",
+            "test": "45/87"
+          }
+        ]
+      },
+      {
+        "team": "IND",
+        "rules": [
+          {
+            "rule": "21 & 7 days",
+            "direction": "repeat",
+            "search": "52/68",
+            "test": "20/48"
+          },
+          {
+            "rule": "7-day gap, 2nd previous, same season",
+            "direction": "repeat",
+            "search": "73/96",
+            "test": "33/67"
+          }
+        ]
+      },
+      {
+        "team": "JAX",
+        "rules": [
+          {
+            "rule": "42 & 28 days",
+            "direction": "repeat",
+            "search": "28/39",
+            "test": "38/61"
+          },
+          {
+            "rule": "any gap, 6th previous",
+            "direction": "repeat",
+            "search": "74/126",
+            "test": "81/125"
+          }
+        ]
+      },
+      {
+        "team": "KC",
+        "rules": [
+          {
+            "rule": "28 & 7 days",
+            "direction": "repeat",
+            "search": "35/52",
+            "test": "35/50"
+          },
+          {
+            "rule": "any gap, 7th previous",
+            "direction": "repeat",
+            "search": "72/103",
+            "test": "93/135"
+          }
+        ]
+      },
+      {
+        "team": "LA",
+        "rules": [
+          {
+            "rule": "28 & 7 days",
+            "direction": "repeat",
+            "search": "51/69",
+            "test": "23/42"
+          },
+          {
+            "rule": "any gap, 8th previous",
+            "direction": "repeat",
+            "search": "82/113",
+            "test": "60/115"
+          }
+        ]
+      },
+      {
+        "team": "LAC",
+        "rules": [
+          {
+            "rule": "14 & 7 days",
+            "direction": "repeat",
+            "search": "56/77",
+            "test": "21/41"
+          },
+          {
+            "rule": "7-day gap, 2nd previous, same season",
+            "direction": "repeat",
+            "search": "65/91",
+            "test": "31/62"
+          }
+        ]
+      },
+      {
+        "team": "LV",
+        "rules": [
+          {
+            "rule": "49 & 21 days",
+            "direction": "repeat",
+            "search": "30/40",
+            "test": "20/35"
+          },
+          {
+            "rule": "any gap, 8th previous",
+            "direction": "repeat",
+            "search": "76/126",
+            "test": "71/118"
+          }
+        ]
+      },
+      {
+        "team": "MIA",
+        "rules": [
+          {
+            "rule": "42 & 28 days",
+            "direction": "repeat",
+            "search": "27/38",
+            "test": "10/34"
+          },
+          {
+            "rule": "any gap, 4th previous, same season",
+            "direction": "repeat",
+            "search": "59/91",
+            "test": "46/84"
+          }
+        ]
+      },
+      {
+        "team": "MIN",
+        "rules": [
+          {
+            "rule": "63 & 49 days",
+            "direction": "repeat",
+            "search": "25/38",
+            "test": "14/27"
+          },
+          {
+            "rule": "any gap, 3rd previous, same season",
+            "direction": "repeat",
+            "search": "56/95",
+            "test": "53/89"
+          }
+        ]
+      },
+      {
+        "team": "NE",
+        "rules": [
+          {
+            "rule": "35 & 21 days",
+            "direction": "repeat",
+            "search": "39/49",
+            "test": "36/50"
+          },
+          {
+            "rule": "any gap, 5th previous, same season",
+            "direction": "repeat",
+            "search": "86/118",
+            "test": "75/113"
+          }
+        ]
+      },
+      {
+        "team": "NO",
+        "rules": [
+          {
+            "rule": "56 & 49 days",
+            "direction": "repeat",
+            "search": "27/37",
+            "test": "16/34"
+          },
+          {
+            "rule": "any gap, 2nd previous, same season",
+            "direction": "repeat",
+            "search": "65/106",
+            "test": "59/108"
+          }
+        ]
+      },
+      {
+        "team": "NYG",
+        "rules": [
+          {
+            "rule": "42 & 7 days",
+            "direction": "repeat",
+            "search": "34/45",
+            "test": "20/33"
+          },
+          {
+            "rule": "7-day gap, 5th previous",
+            "direction": "repeat",
+            "search": "52/74",
+            "test": "39/63"
+          }
+        ]
+      },
+      {
+        "team": "NYJ",
+        "rules": [
+          {
+            "rule": "56 & 28 days",
+            "direction": "reverse",
+            "search": "26/30",
+            "test": "11/29"
+          },
+          {
+            "rule": "8-day gap, 6th previous",
+            "direction": "repeat",
+            "search": "13/16",
+            "test": "6/8"
+          }
+        ]
+      },
+      {
+        "team": "PHI",
+        "rules": [
+          {
+            "rule": "56 & 35 days",
+            "direction": "repeat",
+            "search": "29/37",
+            "test": "24/37"
+          },
+          {
+            "rule": "any gap, 4th previous",
+            "direction": "repeat",
+            "search": "79/124",
+            "test": "81/127"
+          }
+        ]
+      },
+      {
+        "team": "PIT",
+        "rules": [
+          {
+            "rule": "49 & 14 days",
+            "direction": "repeat",
+            "search": "28/38",
+            "test": "16/32"
+          },
+          {
+            "rule": "any gap, 2nd previous, same season",
+            "direction": "repeat",
+            "search": "78/122",
+            "test": "61/107"
+          }
+        ]
+      },
+      {
+        "team": "SEA",
+        "rules": [
+          {
+            "rule": "49 & 28 days",
+            "direction": "repeat",
+            "search": "28/37",
+            "test": "17/30"
+          },
+          {
+            "rule": "14-day gap, 5th previous",
+            "direction": "reverse",
+            "search": "10/12",
+            "test": "5/8"
+          }
+        ]
+      },
+      {
+        "team": "SF",
+        "rules": [
+          {
+            "rule": "28 & 14 days",
+            "direction": "repeat",
+            "search": "40/57",
+            "test": "30/43"
+          },
+          {
+            "rule": "7-day gap, 8th previous",
+            "direction": "repeat",
+            "search": "48/75",
+            "test": "40/64"
+          }
+        ]
+      },
+      {
+        "team": "TB",
+        "rules": [
+          {
+            "rule": "63 & 7 days",
+            "direction": "repeat",
+            "search": "29/38",
+            "test": "17/32"
+          },
+          {
+            "rule": "7-day gap, 2nd previous, same season",
+            "direction": "repeat",
+            "search": "50/79",
+            "test": "39/68"
+          }
+        ]
+      },
+      {
+        "team": "TEN",
+        "rules": [
+          {
+            "rule": "56 & 28 days",
+            "direction": "repeat",
+            "search": "38/51",
+            "test": "22/33"
+          },
+          {
+            "rule": "6-day gap, 2nd previous",
+            "direction": "repeat",
+            "search": "11/12",
+            "test": "4/7"
+          }
+        ]
+      },
+      {
+        "team": "WAS",
+        "rules": [
+          {
+            "rule": "63 & 49 days",
+            "direction": "reverse",
+            "search": "23/34",
+            "test": "11/22"
+          },
+          {
+            "rule": "6-day gap, 6th previous",
+            "direction": "repeat",
+            "search": "7/9",
+            "test": "6/9"
+          }
+        ]
+      }
+    ]
+  },
+  "splitHalfStrong": {
+    "window": {
+      "searchFrom": 1999,
+      "searchTo": 2012,
+      "testFrom": 2013,
+      "testTo": 2025
+    },
+    "rulesFound": 16,
+    "searchRate": 0.9197530864197531,
+    "searchHits": 149,
+    "searchN": 162,
+    "n": 96,
+    "hits": 55,
+    "marketExpected": 56.75455042783219,
+    "z": -0.3957312657336949,
+    "favorite": {
+      "n": 53,
+      "hits": 28,
+      "agreesWithRule": 36
+    },
+    "rate": 0.5729166666666666,
+    "shuffledRate": 0.5673353873484341,
+    "pShuffle": 0.4687656171914043,
+    "perTeam": [
+      {
+        "team": "ARI",
+        "rules": []
+      },
+      {
+        "team": "ATL",
+        "rules": []
+      },
+      {
+        "team": "BAL",
+        "rules": []
+      },
+      {
+        "team": "BUF",
+        "rules": []
+      },
+      {
+        "team": "CAR",
+        "rules": []
+      },
+      {
+        "team": "CHI",
+        "rules": []
+      },
+      {
+        "team": "CIN",
+        "rules": []
+      },
+      {
+        "team": "CLE",
+        "rules": []
+      },
+      {
+        "team": "DAL",
+        "rules": []
+      },
+      {
+        "team": "DEN",
+        "rules": []
+      },
+      {
+        "team": "DET",
+        "rules": [
+          {
+            "rule": "10-day gap, 3rd previous",
+            "direction": "repeat",
+            "search": "9/10",
+            "test": "3/7"
+          },
+          {
+            "rule": "10-day gap, 6th previous",
+            "direction": "repeat",
+            "search": "9/10",
+            "test": "5/9"
+          },
+          {
+            "rule": "10-day gap, 3rd previous, same season",
+            "direction": "repeat",
+            "search": "9/10",
+            "test": "3/6"
+          },
+          {
+            "rule": "10-day gap, 6th previous, same season",
+            "direction": "repeat",
+            "search": "9/10",
+            "test": "4/7"
+          }
+        ]
+      },
+      {
+        "team": "GB",
+        "rules": [
+          {
+            "rule": "22 & 15 days",
+            "direction": "repeat",
+            "search": "9/10",
+            "test": "4/7"
+          },
+          {
+            "rule": "50 & 22 days",
+            "direction": "repeat",
+            "search": "9/10",
+            "test": "2/4"
+          }
+        ]
+      },
+      {
+        "team": "HOU",
+        "rules": []
+      },
+      {
+        "team": "IND",
+        "rules": []
+      },
+      {
+        "team": "JAX",
+        "rules": []
+      },
+      {
+        "team": "KC",
+        "rules": []
+      },
+      {
+        "team": "LA",
+        "rules": []
+      },
+      {
+        "team": "LAC",
+        "rules": []
+      },
+      {
+        "team": "LV",
+        "rules": []
+      },
+      {
+        "team": "MIA",
+        "rules": []
+      },
+      {
+        "team": "MIN",
+        "rules": []
+      },
+      {
+        "team": "NE",
+        "rules": [
+          {
+            "rule": "63 & 20 days",
+            "direction": "repeat",
+            "search": "8/8",
+            "test": "5/7"
+          },
+          {
+            "rule": "21 & 13 days",
+            "direction": "repeat",
+            "search": "9/10",
+            "test": "1/4"
+          }
+        ]
+      },
+      {
+        "team": "NO",
+        "rules": []
+      },
+      {
+        "team": "NYG",
+        "rules": []
+      },
+      {
+        "team": "NYJ",
+        "rules": [
+          {
+            "rule": "8-day gap, 5th previous",
+            "direction": "repeat",
+            "search": "9/10",
+            "test": "6/8"
+          },
+          {
+            "rule": "8-day gap, 6th previous, same season",
+            "direction": "repeat",
+            "search": "9/10",
+            "test": "3/4"
+          }
+        ]
+      },
+      {
+        "team": "PHI",
+        "rules": [
+          {
+            "rule": "56 & 27 days",
+            "direction": "repeat",
+            "search": "8/8",
+            "test": "2/3"
+          }
+        ]
+      },
+      {
+        "team": "PIT",
+        "rules": []
+      },
+      {
+        "team": "SEA",
+        "rules": []
+      },
+      {
+        "team": "SF",
+        "rules": []
+      },
+      {
+        "team": "TB",
+        "rules": []
+      },
+      {
+        "team": "TEN",
+        "rules": [
+          {
+            "rule": "14 & 6 days",
+            "direction": "repeat",
+            "search": "8/8",
+            "test": "2/4"
+          },
+          {
+            "rule": "6-day gap, 2nd previous",
+            "direction": "repeat",
+            "search": "11/12",
+            "test": "4/7"
+          },
+          {
+            "rule": "6-day gap, 3rd previous",
+            "direction": "repeat",
+            "search": "11/12",
+            "test": "4/7"
+          },
+          {
+            "rule": "6-day gap, 2nd previous, same season",
+            "direction": "repeat",
+            "search": "11/12",
+            "test": "4/7"
+          },
+          {
+            "rule": "6-day gap, 3rd previous, same season",
+            "direction": "repeat",
+            "search": "11/12",
+            "test": "3/5"
+          }
+        ]
+      },
+      {
+        "team": "WAS",
+        "rules": []
+      }
+    ]
+  },
+  "equalGaps": [
+    {
+      "gap": 6,
+      "count": 3,
+      "stretches": 1,
+      "n": 1,
+      "hits": 0,
+      "rate": 0,
+      "shuffledRate": 0.529,
+      "p": 0.47126436781609193,
+      "market": {
+        "n": 1,
+        "hits": 0,
+        "marketExpected": 0.1379081992758845,
+        "z": -0.3999615903552898,
+        "favorite": {
+          "n": 1,
+          "hits": 1,
+          "agreesWithRule": 0
+        }
+      }
+    },
+    {
+      "gap": 6,
+      "count": 2,
+      "stretches": 34,
+      "n": 34,
+      "hits": 19,
+      "rate": 0.5588235294117647,
+      "shuffledRate": 0.5492794117647029,
+      "p": 1,
+      "market": {
+        "n": 34,
+        "hits": 19,
+        "marketExpected": 18.862193126003724,
+        "z": 0.051832239570919994,
+        "favorite": {
+          "n": 34,
+          "hits": 26,
+          "agreesWithRule": 19
+        }
+      }
+    },
+    {
+      "gap": 7,
+      "count": 3,
+      "stretches": 4595,
+      "n": 4576,
+      "hits": 2552,
+      "rate": 0.5576923076923077,
+      "shuffledRate": 0.5445930540390148,
+      "p": 0.06146926536731634,
+      "market": {
+        "n": 4576,
+        "hits": 2552,
+        "marketExpected": 2502.92220339836,
+        "z": 1.5828158201931068,
+        "favorite": {
+          "n": 4551,
+          "hits": 3060,
+          "agreesWithRule": 2710
+        }
+      }
+    }
+  ]
+}

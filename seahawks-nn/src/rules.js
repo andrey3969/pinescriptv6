@@ -23,7 +23,7 @@ export function ruleInputs(seq, j, rule) {
     return a === undefined || b === undefined ? null : [a, b];
   }
   const a = j - rule.k;
-  if (a < 0 || seq[j].day - seq[j - 1].day !== rule.gap) return null;
+  if (a < 0 || (rule.gap && seq[j].day - seq[j - 1].day !== rule.gap)) return null; // gap 0 = any gap
   if (rule.sameSeason && seq[a].season !== seq[j].season) return null;
   return [a, j - 1];
 }
