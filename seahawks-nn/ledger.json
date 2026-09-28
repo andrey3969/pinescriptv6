@@ -30,6 +30,15 @@
       "text": "From the handwritten 21-day blocks (2024 season: 6 reversals in 8 pairs): when Seattle plays a game exactly 21 days after another, predict the opposite result of that earlier game."
     },
     {
+      "id": "14-reversal",
+      "team": "SEA",
+      "registered": "2026-09-28",
+      "type": "lag",
+      "lag": 14,
+      "reverse": true,
+      "text": "From the interval tests: Seattle games exactly 14 days apart reversed 55.1% of the time in 1999-2025 (276 pairs, p = 0.016 before allowing for 10 intervals tried). When Seattle plays a game exactly 14 days after another, predict the opposite result of that earlier game."
+    },
+    {
       "id": "ats-rest3",
       "registered": "2026-09-28",
       "type": "pick",
