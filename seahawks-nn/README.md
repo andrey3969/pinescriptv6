@@ -4,9 +4,11 @@ A neural network that tries to predict Seattle Seahawks results from nothing but
 Seattle's own win/loss sequence and the calendar spacing of its games, plus the
 statistical checks needed to tell a real pattern from a lucky one.
 
-**Results: [`results/REPORT.md`](results/REPORT.md)** (regenerate with `node cli.js report`).
+**Results: [`results/analysis.pdf`](results/analysis.pdf)** (detailed, with charts) and
+[`results/REPORT.md`](results/REPORT.md) (regenerate with `node cli.js report`, then `node cli.js pdf`).
 
 Zero dependencies: plain Node.js 20+, no `npm install`. Works for any team code (`--team KC`).
+Only the PDF step needs Playwright's Chromium; without it `node cli.js pdf` writes the HTML instead.
 
 ## Commands
 
@@ -14,6 +16,7 @@ Zero dependencies: plain Node.js 20+, no `npm install`. Works for any team code 
 node cli.js report      # full analysis -> results/REPORT.md, results.json, predictions.csv (~4 min)
 node cli.js report --quick          # same with fewer shuffles (~1 min)
 node cli.js render      # rebuild REPORT.md from results/results.json without recomputing
+node cli.js pdf         # detailed PDF analysis with charts -> results/analysis.pdf
 node cli.js evaluate    # walk-forward accuracy of every model
 node cli.js scan        # calendar and game-order rule families vs. shuffled seasons
 node cli.js predict     # next game's win probability + where the named rules can fire this season
@@ -56,6 +59,7 @@ src/scan.js         interval scans and rule-family scans against shuffled season
 src/ledger.js       forward scoring of the rules in ledger.json
 src/jobs.js         runs shuffles / teams across worker threads
 src/pipeline.js     the full analysis; src/report.js renders REPORT.md
+src/pdf.js          the PDF analysis (HTML + inline SVG charts, printed with Chromium)
 data/games.csv      nflverse games.csv (every NFL game since 1999), trimmed to the columns used
 ```
 

@@ -6,6 +6,7 @@ import { toCsv } from './src/csv.js';
 import { isDecided, loadGames, resultChar, teamSchedule } from './src/data.js';
 import { loadLedger, scoreLedger } from './src/ledger.js';
 import { ALL_MODEL_KEYS, MODELS, walkForward } from './src/models.js';
+import { buildPdf } from './src/pdf.js';
 import { DEFAULTS, runAll } from './src/pipeline.js';
 import { predictNext, upcomingRuleCalls } from './src/predict.js';
 import { renderReport } from './src/report.js';
@@ -18,6 +19,7 @@ const USAGE = `Seattle Seahawks pattern network (works for any team code)
 
   node cli.js report     full analysis -> results/REPORT.md, results.json, predictions.csv
   node cli.js render     rebuild REPORT.md from results.json without recomputing
+  node cli.js pdf        detailed PDF analysis -> results/analysis.pdf (needs Playwright)
   node cli.js evaluate   walk-forward accuracy of every model
   node cli.js scan       calendar and game-order rule scans against shuffled seasons
   node cli.js predict    next game + upcoming calls of the named rules
@@ -78,6 +80,16 @@ function render() {
   const R = JSON.parse(readFileSync(join(outDir, 'results.json'), 'utf8'));
   writeFileSync(join(outDir, 'REPORT.md'), renderReport(R));
   console.error(`rendered ${join(outDir, 'REPORT.md')}`);
+}
+
+async function pdf() {
+  const outDir = args.out ?? join(HERE, 'results');
+  const R = JSON.parse(readFileSync(join(outDir, 'results.json'), 'utf8'));
+  const res = await buildPdf(R, {
+    outFile: join(outDir, 'analysis.pdf'),
+    htmlFile: args.html ? join(outDir, 'analysis.html') : undefined,
+  });
+  console.error(res.pdf ? `wrote ${res.pdf}` : res.reason);
 }
 
 function evaluate() {
@@ -188,7 +200,7 @@ function query() {
   console.log(`\n${opts.from}-${opts.to}, games ${lag} days apart${args.consecutive ? ' (back-to-back only)' : ''}: ${rep} repetitions, ${rev} reversals`);
 }
 
-const COMMANDS = { report, render, evaluate, scan, predict, ledger, query };
+const COMMANDS = { report, render, pdf, evaluate, scan, predict, ledger, query };
 if (!COMMANDS[cmd]) {
   console.log(USAGE);
   process.exit(cmd ? 1 : 0);

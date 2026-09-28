@@ -222,6 +222,7 @@ export function intervalScan(
     focus = [28, 10],
     orderFocus = { gap: 10, k: 4 },
     pairs = true,
+    keepNulls = false,
   } = {},
 ) {
   const base = seq.map((g) => g.result);
@@ -336,6 +337,12 @@ export function intervalScan(
     },
     combinedRules: calRules.length + orderRules.length,
   };
+  if (keepNulls) {
+    // The best (smallest) p-value found in each shuffled history, per search.
+    // Ten significant digits keep exact ties (e.g. 8/8 = 0.0078125) intact.
+    const keep = (xs) => xs.map((x) => Number(x.toPrecision(10)));
+    out.nullMinP = { calendar: keep(nullMinCal), order: keep(nullMinOrder), both: keep(nullMinBoth) };
+  }
   if (pairs) {
     out.pairLags = intervalTable(countPairs(pairIdx, base, maxPairLag + 1), nullPairSame, nullPairN, 20);
     out.consecutiveGaps = intervalTable(countPairs(consecIdx, base, maxGap + 1), nullConsecSame, nullConsecN, 5);

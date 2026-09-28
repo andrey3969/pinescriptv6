@@ -56,12 +56,15 @@ function summarizePerms(runs, models) {
       const acc = nulls.map((r) => r.metrics[k].accuracy);
       const ll = nulls.map((r) => r.metrics[k].logLoss);
       const spread = (xs) => ({ mean: mean(xs), p05: quantile(xs, 0.05), p95: quantile(xs, 0.95) });
+      const keep = (xs) => xs.map((x) => Number(x.toFixed(5)));
       return [
         k,
         {
           real: real.metrics[k],
           nullAccuracy: spread(acc),
           nullLogLoss: spread(ll),
+          nullAccuracyValues: keep(acc),
+          nullLogLossValues: keep(ll),
           pAccuracy: empiricalP(acc, (a) => a >= real.metrics[k].accuracy - 1e-12),
           pLogLoss: empiricalP(ll, (l) => l <= real.metrics[k].logLoss + 1e-12),
         },
@@ -110,7 +113,7 @@ export async function runAll(options = {}, log = () => {}) {
   );
 
   log(`interval scan: ${o.scanPerms} shuffles`);
-  const scan = intervalScan(seq, { from: o.from, to: o.to, nPerm: o.scanPerms });
+  const scan = intervalScan(seq, { from: o.from, to: o.to, nPerm: o.scanPerms, keepNulls: true });
   const cases = Object.fromEntries(
     Object.entries(RULES).map(([id, rule]) => [
       id,
