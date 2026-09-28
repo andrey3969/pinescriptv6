@@ -12,7 +12,7 @@ import { binomTwoSided, binomUpper } from './stats.js';
 // Chart tokens (light print). Validated with the dataviz palette validator:
 // blue/orange pass all categorical checks on white; the two blue steps pass
 // the ordinal checks.
-const C = {
+export const C = {
   ink: '#0b0b0b',
   ink2: '#52514e',
   muted: '#898781',
@@ -28,12 +28,12 @@ const C = {
   panel: '#f6f5f1',
   accentSoft: '#eef4fc',
 };
-const FONT = `'Liberation Sans', 'DejaVu Sans', Arial, sans-serif`;
+export const FONT = `'Liberation Sans', 'DejaVu Sans', Arial, sans-serif`;
 
 // ------------------------------------------------------------------ helpers
-const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const pct = (x, d = 1) => (Number.isFinite(x) ? `${(100 * x).toFixed(d)}%` : 'n/a');
-const fp = (p) => (p < 0.001 ? '< 0.001' : p < 0.01 ? p.toFixed(3) : p.toFixed(2));
+export const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+export const pct = (x, d = 1) => (Number.isFinite(x) ? `${(100 * x).toFixed(d)}%` : 'n/a');
+export const fp = (p) => (p < 0.001 ? '< 0.001' : p < 0.01 ? p.toFixed(3) : p.toFixed(2));
 const f3 = (x) => (Number.isFinite(x) ? x.toFixed(3) : 'n/a');
 const wl = (r) => (r === 1 ? 'W' : r === -1 ? 'L' : r === 0 ? 'T' : '–');
 const where = (g) => `${g.home === 1 ? 'vs' : g.home === -1 ? 'at' : 'vs'} ${g.opp}`;
@@ -44,7 +44,7 @@ const n1 = (x) => (Number.isInteger(x) ? String(x) : x.toFixed(1));
 const ratio = (x) => (x && x.n ? `${x.hits}/${x.n}` : '–');
 
 // Tables up to 16 rows are kept on one page; longer ones break with a repeated header.
-function table(headers, rows, { num = [], cls = '' } = {}) {
+export function table(headers, rows, { num = [], cls = '' } = {}) {
   const th = headers.map((h, k) => `<th${num.includes(k) ? ' class="num"' : ''}>${h}</th>`).join('');
   const body = rows
     .map((r) => `<tr${r.cls ? ` class="${r.cls}"` : ''}>${(r.cells ?? r).map((c, k) => `<td${num.includes(k) ? ' class="num"' : ''}>${c}</td>`).join('')}</tr>`)
@@ -53,25 +53,25 @@ function table(headers, rows, { num = [], cls = '' } = {}) {
 }
 
 // ------------------------------------------------------------------ SVG kit
-const svg = (w, h, body, label) =>
+export const svg = (w, h, body, label) =>
   `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="${esc(label)}" xmlns="http://www.w3.org/2000/svg" style="font-family:${FONT}">${body}</svg>`;
 // halo: a surface-colored outline so a label stays legible where it crosses a line.
-const text = (x, y, s, { size = 10.5, fill = C.ink2, anchor = 'start', weight = 400, halo = false } = {}) =>
+export const text = (x, y, s, { size = 10.5, fill = C.ink2, anchor = 'start', weight = 400, halo = false } = {}) =>
   `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${size}" fill="${fill}" text-anchor="${anchor}" font-weight="${weight}"${
     halo ? ' stroke="#ffffff" stroke-width="3.5" stroke-linejoin="round" paint-order="stroke"' : ''
   }>${esc(s)}</text>`;
-const line = (x1, y1, x2, y2, stroke, width = 1) =>
+export const line = (x1, y1, x2, y2, stroke, width = 1) =>
   `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${stroke}" stroke-width="${width}" stroke-linecap="round"/>`;
-const dot = (cx, cy, r, fill) => `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="${fill}" stroke="#ffffff" stroke-width="2"/>`;
+export const dot = (cx, cy, r, fill) => `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="${fill}" stroke="#ffffff" stroke-width="2"/>`;
 // Column with a 4px rounded data end and a square baseline.
-function column(x, yTop, w, yBase, fill, r = 4) {
+export function column(x, yTop, w, yBase, fill, r = 4) {
   const h = yBase - yTop;
   if (h <= 0) return '';
   const rr = Math.min(r, w / 2, h);
   return `<path d="M${x.toFixed(1)},${yBase.toFixed(1)} V${(yTop + rr).toFixed(1)} Q${x.toFixed(1)},${yTop.toFixed(1)} ${(x + rr).toFixed(1)},${yTop.toFixed(1)} H${(x + w - rr).toFixed(1)} Q${(x + w).toFixed(1)},${yTop.toFixed(1)} ${(x + w).toFixed(1)},${(yTop + rr).toFixed(1)} V${yBase.toFixed(1)} Z" fill="${fill}"/>`;
 }
-const ICON_OK = `<svg class="ic" viewBox="0 0 12 12" aria-label="hit"><circle cx="6" cy="6" r="6" fill="${C.good}"/><path d="M3.2 6.2 L5.2 8.1 L8.9 4.2" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-const ICON_MISS = `<svg class="ic" viewBox="0 0 12 12" aria-label="miss"><circle cx="6" cy="6" r="6" fill="${C.critical}"/><path d="M4 4 L8 8 M8 4 L4 8" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+export const ICON_OK = `<svg class="ic" viewBox="0 0 12 12" aria-label="hit"><circle cx="6" cy="6" r="6" fill="${C.good}"/><path d="M3.2 6.2 L5.2 8.1 L8.9 4.2" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+export const ICON_MISS = `<svg class="ic" viewBox="0 0 12 12" aria-label="miss"><circle cx="6" cy="6" r="6" fill="${C.critical}"/><path d="M4 4 L8 8 M8 4 L4 8" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 const NO_CALL = `<span class="nocall" aria-label="no call">–</span>`;
 
 // Figure 1: out-of-sample accuracy with 95% ranges; the hypothesis model highlighted.
@@ -402,7 +402,7 @@ function powerRows(p0, p1, ns, alpha = 0.05) {
 }
 
 // ------------------------------------------------------------------ document
-const CSS = `
+export const CSS = `
 @page { size: Letter; margin: 0.75in 0.8in 0.8in 0.8in; }
 html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 body { font-family: ${FONT}; font-size: 9.8pt; line-height: 1.45; color: ${C.ink}; margin: 0; }
@@ -881,7 +881,7 @@ npm run update-data           # new games from nflverse (needs GitHub access)</p
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(teamName)} pattern analysis</title><style>${CSS}</style></head><body>${html.join('\n')}</body></html>`;
 }
 
-async function loadPlaywright() {
+export async function loadPlaywright() {
   try {
     return await import('playwright');
   } catch {}

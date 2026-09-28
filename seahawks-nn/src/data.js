@@ -59,6 +59,7 @@ export function teamSchedule(games, team) {
       weekday: weekdayName(day),
       opp: isHome ? away : home,
       home: g.location === 'Neutral' ? 0 : isHome ? 1 : -1,
+      designatedHome: isHome, // the side the point spread is quoted for, even at neutral sites
       div: g.div_game === '1',
       pf: played ? (isHome ? hs : as) : null,
       pa: played ? (isHome ? as : hs) : null,

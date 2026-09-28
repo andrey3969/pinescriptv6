@@ -36,6 +36,12 @@ const USAGE = `Seattle Seahawks pattern network (works for any team code)
   node cli.js query --lag 14 [--consecutive]   repeats/reversals for games 14 days apart
   node cli.js query --equal-gap 6 --count 3 [--all-teams]
                                           stretches of three 6-day gaps (6 x 3 = 18 days)
+  node cli.js lab        lattice lab: ~300,000 lattices on all 32 teams (day lags, two- and
+                         three-lookback rules, game-order rules, streaks, phases, cycles,
+                         compressibility), two null models, split-half, season cycles and a
+                         machine-learning suite -> results/lab.json + results/lattice-lab.pdf
+                         (~7 min; --quick ~2 min; --reps 1000 --placebo-reps 300 --ml-null 20)
+  node cli.js lab-pdf    rebuild results/lattice-lab.pdf from results/lab.json
 
 options: --team SEA  --from 1999  --to 2025  --test-from 2004  --seeds 5
          --perms 200  --scan-perms 2000  --team-perms 1000  --workers N  --quick`;
@@ -282,7 +288,38 @@ function query() {
   console.log(`\n${opts.from}-${opts.to}, games ${lag} days apart${args.consecutive ? ' (back-to-back only)' : ''}: ${rep} repetitions, ${rev} reversals`);
 }
 
-const COMMANDS = { report, render, pdf, evaluate, scan, predict, ledger, crossteam, query };
+async function lab() {
+  const { runLab } = await import('./src/lab/run.js');
+  const outDir = args.out ?? join(HERE, 'results');
+  mkdirSync(outDir, { recursive: true });
+  const L = await runLab(loadGames(), {
+    reps: int(args.reps, args.quick ? 200 : 1000),
+    placeboReps: int(args['placebo-reps'], args.quick ? 0 : 300),
+    mlNullReps: int(args['ml-null'], args.quick ? 5 : 20),
+    seasonPerms: args.quick ? 2000 : 10000,
+    seasonMarket: args.quick ? 200 : 1000,
+    workers: opts.workers,
+    team: opts.team,
+    quick: Boolean(args.quick),
+    log: (msg) => console.error(msg),
+  });
+  writeFileSync(join(outDir, 'lab.json'), JSON.stringify(L, null, 1) + '\n');
+  console.error(`lab done in ${L.seconds}s -> ${join(outDir, 'lab.json')}`);
+  if (!args['no-pdf']) await labPdf();
+}
+
+async function labPdf() {
+  const { buildLabPdf } = await import('./src/lab/pdf.js');
+  const outDir = args.out ?? join(HERE, 'results');
+  const L = JSON.parse(readFileSync(join(outDir, 'lab.json'), 'utf8'));
+  const res = await buildLabPdf(L, {
+    outFile: join(outDir, 'lattice-lab.pdf'),
+    htmlFile: args.html ? join(outDir, 'lattice-lab.html') : undefined,
+  });
+  console.error(res.pdf ? `wrote ${res.pdf}` : res.reason);
+}
+
+const COMMANDS = { report, render, pdf, evaluate, scan, predict, ledger, crossteam, query, lab, 'lab-pdf': labPdf };
 if (!COMMANDS[cmd]) {
   console.log(USAGE);
   process.exit(cmd ? 1 : 0);

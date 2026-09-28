@@ -39,7 +39,7 @@ function buildConsecutive(seq, rows, maxGap) {
 
 // [i, k, j, combo] for every game j and every two earlier games i < k within
 // maxLag days; combo encodes (d1 = j - i, d2 = j - k) in days.
-function buildTriplets(seq, rows, maxLag) {
+export function buildTriplets(seq, rows, maxLag) {
   const out = [];
   const stride = maxLag + 1;
   for (let c = 0; c < rows.length; c++) {
@@ -60,16 +60,16 @@ function buildTriplets(seq, rows, maxLag) {
 export const ORDER_MAX_GAP = 21;
 export const ORDER_MAX_K = 8;
 const ORDER_GAPS = ORDER_MAX_GAP + 1; // gap 0 stands for "any gap"
-const ORDER_SIZE = 2 * ORDER_GAPS * (ORDER_MAX_K + 1);
+export const ORDER_SIZE = 2 * ORDER_GAPS * (ORDER_MAX_K + 1);
 const orderId = (same, gap, k) => (same * ORDER_GAPS + gap) * (ORDER_MAX_K + 1) + k;
-const decodeOrder = (id) => ({
+export const decodeOrder = (id) => ({
   gap: Math.floor(id / (ORDER_MAX_K + 1)) % ORDER_GAPS,
   k: id % (ORDER_MAX_K + 1),
   sameSeason: id >= ORDER_GAPS * (ORDER_MAX_K + 1),
 });
 
 // [j, gap, sameSeasonMask, prev1..prevK] per game; prev = -1 before the window.
-function buildOrderCases(seq, rows, from) {
+export function buildOrderCases(seq, rows, from) {
   const out = [];
   for (const j of rows) {
     if (j < 1 || seq[j - 1].season < from) continue;
@@ -101,7 +101,7 @@ function countPairs(pairs, results, size) {
 
 // nAgree/hits: the rule fires when games i and k agree; a hit if j matches.
 // nEnds/endsSame: i and j compared whenever a game k sits between them.
-function countTriplets(trip, results, size) {
+export function countTriplets(trip, results, size) {
   const nAgree = new Int32Array(size);
   const hits = new Int32Array(size);
   const nEnds = new Int32Array(size);
@@ -120,7 +120,7 @@ function countTriplets(trip, results, size) {
   return { nAgree, hits, nEnds, endsSame };
 }
 
-function countOrder(cases, results) {
+export function countOrder(cases, results) {
   const nAgree = new Int32Array(ORDER_SIZE);
   const hits = new Int32Array(ORDER_SIZE);
   const stride = 3 + ORDER_MAX_K;

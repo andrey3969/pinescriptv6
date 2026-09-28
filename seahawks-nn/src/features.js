@@ -4,6 +4,9 @@
 export const ORDER_LAGS = 8; // last N games, in game order
 export const GAP_LAGS = 4; // day gaps between the last few games
 export const CAL_MAX = 63; // "result exactly d days earlier", d = 1..63
+// Long calendar lags from the hand analysis (1, 2 and 3 years, 161 = 7 x 23,
+// 184 = 8 x 23, 1380 ... 2760, and 8400 days = 23 years).
+export const LONG_LAGS = [161, 184, 364, 371, 728, 1092, 1380, 1764, 1998, 2160, 2760, 8400];
 const OFFSEASON_DAYS = 60;
 const FORM_PRIOR_GAMES = 4;
 
@@ -15,6 +18,12 @@ export const FEATURE_SETS = {
   sequence: ['order'],
   conventional: ['weekday', 'context', 'form', 'market'],
   all: ['order', 'gaps', 'cal', 'weekday', 'context', 'form', 'market'],
+  // lattice lab (league-wide models)
+  labLattice: ['order', 'gaps', 'cal', 'weekday', 'longcal'],
+  labMarket: ['market'],
+  labForm: ['form'],
+  labMarketForm: ['market', 'form'],
+  labMarketLattice: ['market', 'order', 'gaps', 'cal', 'weekday', 'longcal'],
 };
 
 const WEEKDAY_SLOTS = ['Sun', 'Mon', 'Thu', 'Sat'];
@@ -112,6 +121,15 @@ const GROUPS = {
       for (let d = 1; d <= CAL_MAX; d++) out.push(prev[d] >= 0 ? s.res(prev[d]) : 0);
     },
   },
+  longcal: {
+    names: LONG_LAGS.map((d) => `day_lag${d}`),
+    fill(out, i, s) {
+      for (const d of LONG_LAGS) {
+        const j = s.byDay.get(s.seq[i].day - d);
+        out.push(j === undefined ? 0 : s.res(j));
+      }
+    },
+  },
   weekday: {
     names: [...WEEKDAY_SLOTS.map((w) => `weekday_${w}`), 'weekday_other'],
     fill(out, i, s) {
@@ -151,9 +169,11 @@ export function buildMatrix(seq, results, setName) {
   const groups = FEATURE_SETS[setName];
   if (!groups) throw new Error(`unknown feature set: ${setName}`);
   const needsForm = groups.includes('form');
+  const index = scheduleIndex(seq);
   const s = {
     seq,
-    calPrev: scheduleIndex(seq).calPrev,
+    calPrev: index.calPrev,
+    byDay: index.byDay,
     res: (j) => (results[j] === 1 ? 1 : results[j] === -1 ? -1 : 0),
     form: needsForm ? formTable(seq, results) : null,
   };

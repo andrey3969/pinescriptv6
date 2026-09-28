@@ -4,7 +4,9 @@ TradingView Pine Script v6 indicators.
 
 Also here: [`seahawks-nn/`](seahawks-nn/), a dependency-free Node.js neural network and
 pattern scanner for Seattle Seahawks results since 1999 (see the
-[PDF analysis](seahawks-nn/results/analysis.pdf) or the [report](seahawks-nn/results/REPORT.md)).
+[PDF analysis](seahawks-nn/results/analysis.pdf) or the [report](seahawks-nn/results/REPORT.md)),
+and a lattice lab that tests ~300,000 calendar lattices on all 32 NFL teams
+([lattice-lab.pdf](seahawks-nn/results/lattice-lab.pdf)).
 
 ## ChronoForge
 

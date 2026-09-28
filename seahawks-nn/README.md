@@ -7,6 +7,12 @@ statistical checks needed to tell a real pattern from a lucky one.
 **Results: [`results/analysis.pdf`](results/analysis.pdf)** (detailed, with charts) and
 [`results/REPORT.md`](results/REPORT.md) (regenerate with `node cli.js report`, then `node cli.js pdf`).
 
+**Lattice lab: [`results/lattice-lab.pdf`](results/lattice-lab.pdf)**: about 300,000 lattices
+(day intervals, two- and three-lookback rules, gap + k-th previous rules, game-count repeats,
+streaks, phases, cycles, compressibility) on all 32 teams, against two null models, with a
+hold-out test on 2013-2025, season cycles (the 23-year idea) and thirteen league-wide prediction
+models against the point spread. Raw numbers in [`results/lab.json`](results/lab.json).
+
 Zero dependencies: plain Node.js 20+, no `npm install`. Works for any team code (`--team KC`).
 Only the PDF step needs Playwright's Chromium; without it `node cli.js pdf` writes the HTML instead.
 
@@ -29,6 +35,9 @@ node cli.js query --gap 10 --position 4 --same-season   # same, all games in one
 node cli.js query --lag 14 --consecutive     # repeats/reversals, back-to-back games 14 days apart
 node cli.js query --lag 14 --from 2003 --to 2025   # same for all pairs, any era
 node cli.js query --equal-gap 6 --count 3 [--all-teams]   # "6 x 3 = 18": three 6-day gaps in a row
+node cli.js lab         # lattice lab on all 32 teams -> results/lab.json + lattice-lab.pdf (~7 min)
+node cli.js lab --quick             # fewer null histories, no calibration run (~2 min)
+node cli.js lab-pdf     # rebuild results/lattice-lab.pdf from results/lab.json
 npm test                # unit tests (leakage, network, statistics, data)
 npm run update-data     # refresh data/games.csv from nflverse on GitHub
 npm run update-data -- ../nfldata/data/games.csv   # ...or from a local clone of nflverse/nfldata
@@ -49,6 +58,9 @@ Common options: `--team SEA --from 1999 --to 2025 --test-from 2004 --seeds 5 --w
 | Do specific intervals repeat or reverse? | Same-result rates for every interval 1–400 days and every back-to-back gap, with false-discovery-rate correction. |
 | Does each team have its own pattern? | The scan and the network for all 32 franchises. |
 | Do the patterns hold on fresh data? | `crossteam`: Seattle's rules on the other 31 teams; each team's best and near-perfect rules found in 1999–2012, scored on 2013–2025; all against shuffles and the point spread. |
+| Is there any lattice at all, on any team? | `lab`: ten families of lattices (~9,000 per team, ~300,000 in all) on every team and all 32 pooled. Each family is judged by its strongest lattice, by many weak ones together, by how many teams have their "own" lattice, and by a 1999–2012 → 2013–2025 hold-out. Two null models keep every team-season record: a shuffle, and a spread-weighted shuffle that also keeps who played whom and where. The engine is checked on pure-noise histories first. |
+| Do seasons echo (23-year batches)? | `lab`: correlation of season win rates 1–26 seasons apart vs. random season order and vs. replays from the point spread. |
+| Can any model use lattices to predict? | `lab`: ridge, lasso, naive Bayes, random forest, neural network, pattern matcher and per-team models trained league-wide, walk-forward in four blocks, against the point spread. |
 
 ## Layout
 
@@ -65,6 +77,9 @@ src/crossteam.js    out-of-sample tests on other teams and later seasons
 src/jobs.js         runs shuffles / teams across worker threads
 src/pipeline.js     the full analysis; src/report.js renders REPORT.md
 src/pdf.js          the PDF analysis (HTML + inline SVG charts, printed with Chromium)
+src/lab/            the lattice lab: families.js, spectral.js (lattice families), engine.js +
+                    worker.js + familytest.js (null models, z-scores, family-wise tests),
+                    seasons.js, ml.js (league-wide models), run.js, pdf.js
 data/games.csv      nflverse games.csv (every NFL game since 1999), trimmed to the columns used
 ```
 
