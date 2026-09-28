@@ -2,6 +2,10 @@
 
 TradingView Pine Script v6 indicators.
 
+Also here: [`seahawks-nn/`](seahawks-nn/), a dependency-free Node.js neural network and
+pattern scanner for Seattle Seahawks results since 1999 (see its
+[report](seahawks-nn/results/REPORT.md)).
+
 ## ChronoForge
 
 `ChronoForge.pine` — a multi-timeframe trend & momentum "forge" that blends

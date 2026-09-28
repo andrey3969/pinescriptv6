@@ -1,0 +1,16 @@
+{
+  "name": "seahawks-nn",
+  "version": "1.0.0",
+  "description": "Walk-forward tested neural network and interval-pattern scanner for Seattle Seahawks results since 1999",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test",
+    "report": "node cli.js report",
+    "predict": "node cli.js predict",
+    "update-data": "node scripts/update-data.mjs"
+  }
+}
