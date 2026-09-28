@@ -1,0 +1,13 @@
+{
+  "about": "Bitcoin up/down rules written down on a date. `node btc.js` scores each one only on days after its registration date. A day is up when its close (00:00 UTC at the end of the day) is above the previous day's close. Add a rule by appending an entry with today's date; never edit a rule after its date.",
+  "rules": [
+    {
+      "id": "fade-yesterday",
+      "registered": "2026-09-28",
+      "type": "lag",
+      "lag": 1,
+      "reverse": true,
+      "text": "Call each day the opposite of the day before: after an up day call down, after a down day call up. Before registration it won 49.5% in 2011-2018 and 53.0% in 2019-2026 (Coin Metrics daily closes)."
+    }
+  ]
+}

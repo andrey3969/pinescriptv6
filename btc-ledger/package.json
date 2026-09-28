@@ -1,0 +1,13 @@
+{
+  "name": "btc-ledger",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Forward ledger for Bitcoin up/down rules, scored only on days after they are written down",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "update": "node btc.js update",
+    "score": "node btc.js"
+  },
+  "engines": { "node": ">=18" }
+}

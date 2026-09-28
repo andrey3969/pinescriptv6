@@ -8,6 +8,10 @@ pattern scanner for Seattle Seahawks results since 1999 (see the
 and a lattice lab that tests ~300,000 calendar lattices on all 32 NFL teams
 ([lattice-lab.pdf](seahawks-nn/results/lattice-lab.pdf)).
 
+And [`btc-ledger/`](btc-ledger/): a forward ledger for Bitcoin up/down rules, starting with
+"fade yesterday" (call each day the opposite of the day before), scored only on days after
+2026-09-28.
+
 ## ChronoForge
 
 `ChronoForge.pine` — a multi-timeframe trend & momentum "forge" that blends
