@@ -24,6 +24,8 @@ node btc.js update    # append new daily closes (Coinbase BTC-USD, else Kraken X
 node btc.js           # forward record of every rule, with a coin-flip p-value
 node btc.js today     # the next call of every rule
 node btc.js history   # how each rule did before it was written down
+node analysis.js      # how the rule was found: lags 1-30 vs random order, eras, and fade
+                      # yesterday split by side, move size and year (about 10 s)
 npm test              # unit tests
 ```
 
