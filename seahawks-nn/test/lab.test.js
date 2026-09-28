@@ -141,3 +141,17 @@ test('season win rates persist from one year to the next', () => {
   assert.equal(s.lags.length, 26);
   assert.equal(s.team.pairs.find((p) => p.lag === 23).pairs.length, 4);
 });
+
+test('a planted lattice is really in the history the engine sees', () => {
+  const ctx = prepare(games, { families: ['lz'], plant: { rule: { type: 'lag', d: 7 }, q: 1, teams: ['SEA'], seed: 3 } });
+  const seq = ctx.schedules[ctx.teams.indexOf('SEA')];
+  const byDay = new Map(seq.map((g, i) => [g.day, i]));
+  let pairs = 0;
+  seq.forEach((g, j) => {
+    const i = byDay.get(g.day - 7);
+    if (i === undefined || g.season > 2025 || Math.abs(g.result) !== 1 || Math.abs(seq[i].result) !== 1) return;
+    pairs++;
+    assert.equal(g.result, seq[i].result);
+  });
+  assert.ok(pairs > 200, `${pairs} planted pairs`);
+});

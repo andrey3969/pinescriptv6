@@ -1,5 +1,5 @@
 {
-  "about": "Rules written down on a date. `node cli.js ledger` scores each one only on games played after its registration date: a rule found by searching old results can only be tested fairly on games that had not happened yet. Add a rule by appending an entry with today's date.",
+  "about": "Rules written down on a date. `node cli.js ledger` scores each one only on games played after its registration date: a rule found by searching old results can only be tested fairly on games that had not happened yet. Two kinds: a team's result rule (calendar / order), and league-wide picks against the point spread (type pick, from the lattice lab), scored as covers of the picked side. Add a rule by appending an entry with today's date.",
   "rules": [
     {
       "id": "28-10",
@@ -19,6 +19,338 @@
       "k": 4,
       "sameSeason": false,
       "text": "If Seattle's game is exactly 10 days after its previous game, and the previous and fourth-previous results agree, predict that result again."
+    },
+    {
+      "id": "ats-rest3",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "rdp3"
+          ],
+          "side": "back"
+        }
+      ],
+      "text": "More rest than the opponent should help; does the line price it fully? Back the side that is: 3+ more rest days than the opponent."
+    },
+    {
+      "id": "ats-bye",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "rest13",
+            "orest9"
+          ],
+          "side": "back"
+        }
+      ],
+      "text": "Teams off a bye against teams that were not. Back the side that is: off a bye (13+ days of rest) + opponent on 9 or fewer days of rest."
+    },
+    {
+      "id": "ats-thuHome",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "home",
+            "thu"
+          ],
+          "side": "back"
+        }
+      ],
+      "text": "Thursday games give the visitor a short week and a trip. Back the side that is: home team + Thursday game."
+    },
+    {
+      "id": "ats-earlyWest",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "tzPT",
+            "away",
+            "siteET",
+            "early"
+          ],
+          "side": "fade"
+        }
+      ],
+      "text": "A 1 pm Eastern kickoff is 10 am on a Pacific body clock. Fade the side that is: Pacific-time team + road team + game in the Eastern time zone + kickoff before 2 pm ET."
+    },
+    {
+      "id": "ats-nightWest",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "tzPT",
+            "oppET",
+            "night"
+          ],
+          "side": "back"
+        }
+      ],
+      "text": "At a night kickoff a Pacific team is at its daily peak while an Eastern team is 3 hours later in its day (the circadian finding of Smith et al., 1997). Back the side that is: Pacific-time team + opponent is an Eastern-time team + night game (6:30 pm ET or later)."
+    },
+    {
+      "id": "ats-travel",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "travel2"
+          ],
+          "side": "fade"
+        }
+      ],
+      "text": "Road teams 2+ time zones from home. Fade the side that is: road team 2+ time zones from home."
+    },
+    {
+      "id": "ats-revenge",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "meetLs"
+          ],
+          "side": "back"
+        }
+      ],
+      "text": "The loser of the first meeting in a season, in the rematch. Back the side that is: lost to this opponent earlier this season."
+    },
+    {
+      "id": "ats-bounce",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "prevL21"
+          ],
+          "side": "back"
+        }
+      ],
+      "text": "After a 21+ point loss the market may overreact. Back the side that is: team lost its last game by 21+."
+    },
+    {
+      "id": "ats-letdown",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "prevW21"
+          ],
+          "side": "fade"
+        }
+      ],
+      "text": "After a 21+ point win the market may overreact. Fade the side that is: team won its last game by 21+."
+    },
+    {
+      "id": "ats-atsHot",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "cov3"
+          ],
+          "side": "fade"
+        }
+      ],
+      "text": "Teams that covered 3 straight: the line may chase them. Fade the side that is: team covered its last 3."
+    },
+    {
+      "id": "ats-atsCold",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "nocov3"
+          ],
+          "side": "back"
+        }
+      ],
+      "text": "Teams that failed to cover 3 straight. Back the side that is: team failed to cover its last 3."
+    },
+    {
+      "id": "ats-divDog",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "div",
+            "dog"
+          ],
+          "side": "back"
+        }
+      ],
+      "text": "Division rivals know each other; underdogs may keep it closer. Back the side that is: division game + underdog."
+    },
+    {
+      "id": "ats-bigDog",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "dog10"
+          ],
+          "side": "back"
+        }
+      ],
+      "text": "Double-digit underdogs: the public backs favorites. Back the side that is: underdog by 10+."
+    },
+    {
+      "id": "ats-earlyLast",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "wk1_4",
+            "lastDown"
+          ],
+          "side": "back"
+        }
+      ],
+      "text": "In weeks 1-4 the line may lean too hard on last season. Back the side that is: weeks 1-4 + losing record last season."
+    },
+    {
+      "id": "ats-primeFav",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "fav7",
+            "night"
+          ],
+          "side": "fade"
+        },
+        {
+          "atoms": [
+            "fav10",
+            "night"
+          ],
+          "side": "fade"
+        }
+      ],
+      "text": "Big favorites in night games draw public money. Fade the side that is: favored by 7-9.5 + night game (6:30 pm ET or later); or Fade the side that is: favored by 10+ + night game (6:30 pm ET or later)."
+    },
+    {
+      "id": "ats-moon",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "home",
+            "full"
+          ],
+          "side": "back"
+        }
+      ],
+      "text": "Control: nothing should happen. Home teams within 1.5 days of a full moon. Back the side that is: home team + within 1.5 days of a full moon."
+    },
+    {
+      "id": "ats-hand1004",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "gap10",
+            "p14W"
+          ],
+          "side": "back"
+        },
+        {
+          "atoms": [
+            "gap10",
+            "p14L"
+          ],
+          "side": "fade"
+        }
+      ],
+      "text": "The hand-found 10-day / 4th-previous rule as a bet: after 10 days, back a team whose last and 4th-previous games were wins, fade one whose were losses. Back the side that is: last game exactly 10 days before + last and 4th-previous games both wins; or Fade the side that is: last game exactly 10 days before + last and 4th-previous games both losses."
+    },
+    {
+      "id": "ats-hand2810",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "c2810W"
+          ],
+          "side": "back"
+        },
+        {
+          "atoms": [
+            "c2810L"
+          ],
+          "side": "fade"
+        }
+      ],
+      "text": "The hand-found 28/10 rule as a bet: back a team that won the games 28 and 10 days before, fade one that lost both. Back the side that is: won the games 28 and 10 days before; or Fade the side that is: lost the games 28 and 10 days before."
+    },
+    {
+      "id": "ats-search-1",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "sun",
+            "prevL",
+            "meetL"
+          ],
+          "side": "back"
+        }
+      ],
+      "text": "Found by the machine search on 1999-2012 (rank 1). Back the side that is: Sunday game + team lost its last game + lost the last meeting with this opponent."
+    },
+    {
+      "id": "ats-search-2",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "tzCT",
+            "oprevL",
+            "meetW"
+          ],
+          "side": "fade"
+        }
+      ],
+      "text": "Found by the machine search on 1999-2012 (rank 2). Fade the side that is: Central-time team + opponent lost its last game + won the last meeting with this opponent."
+    },
+    {
+      "id": "ats-search-3",
+      "registered": "2026-09-28",
+      "type": "pick",
+      "clauses": [
+        {
+          "atoms": [
+            "home",
+            "div",
+            "nov"
+          ],
+          "side": "fade"
+        }
+      ],
+      "text": "Found by the machine search on 1999-2012 (rank 3). Fade the side that is: home team + division game + November game."
     }
   ]
 }

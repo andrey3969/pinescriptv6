@@ -2,7 +2,7 @@
 // Playwright's Chromium (same kit and palette as the Seattle analysis).
 import { writeFileSync } from 'node:fs';
 import { TEAM_NAMES } from '../data.js';
-import { C, CSS, FONT, column, dot, esc, fp, line, loadPlaywright, pct, svg, table, text } from '../pdf.js';
+import { C, CSS, FONT, dot, esc, line, loadPlaywright, pct, svg, table, text } from '../pdf.js';
 import { mulberry32 } from '../rng.js';
 import { wilson } from '../stats.js';
 
@@ -70,6 +70,8 @@ export const PLAIN = {
   },
 };
 
+// p-values: three decimals below 0.1, so the text agrees with the 0.05 shading.
+export const fp = (p) => (!Number.isFinite(p) ? '–' : p < 0.001 ? '< 0.001' : p < 0.1 ? p.toFixed(3) : p.toFixed(2));
 const MAIN = 'spread';
 const OTHER = 'shuffle';
 const ALPHA = 0.005; // 0.05 over the ten families
@@ -115,7 +117,7 @@ export function verdicts(L) {
 function figStrip(L) {
   const keys = fams(L).filter((k) => L.families[k].pooledTest);
   const W = 640;
-  const H = 320;
+  const H = 292;
   const left = 46;
   const right = 10;
   const top = 34;
@@ -177,14 +179,15 @@ function figLags(L) {
   const items = cur.pooled[MAIN];
   const thr = L.families.calLag.nulls[MAIN].pooled.max.null95;
   const W = 640;
-  const H = 250;
-  const left = 40;
+  const H = 262;
+  const left = 46;
   const right = 12;
-  const top = 30;
+  const top = 44;
   const bottom = H - 34;
   const zs = items.map((x) => x.z).filter(Number.isFinite);
   const lim = Math.max(5, Math.ceil(Math.max(thr, ...zs.map(Math.abs))));
-  const x = (d) => left + ((d - 1) / 399) * (W - left - right);
+  // log scale: the short intervals of the hand analysis get room
+  const x = (d) => left + (Math.log(d) / Math.log(400)) * (W - left - right);
   const y = (z) => bottom - ((z + lim) / (2 * lim)) * (bottom - top);
   let b = '';
   for (let z = -lim; z <= lim; z++) {
@@ -192,33 +195,41 @@ function figLags(L) {
     b += line(left, y(z), W - right, y(z), z === 0 ? C.axis : C.grid);
     b += text(left - 6, y(z) + 3.5, String(z), { anchor: 'end', size: 9.5, fill: C.muted });
   }
-  for (let d = 0; d <= 400; d += 50) {
-    b += text(x(Math.max(1, d)), bottom + 14, String(d), { anchor: 'middle', size: 9.5, fill: C.muted });
-  }
-  b += text((left + W - right) / 2, bottom + 28, 'Days between the two games', { anchor: 'middle', size: 9.5, fill: C.ink2 });
+  for (const d of [1, 2, 3, 4, 7, 10, 14, 21, 28, 50, 100, 200, 400]) b += text(x(d), bottom + 14, String(d), { anchor: 'middle', size: 9.5, fill: C.muted });
+  b += text((left + W - right) / 2, bottom + 28, 'Days between the two games (log scale)', { anchor: 'middle', size: 9.5, fill: C.ink2 });
   for (const s of [-1, 1]) b += `<line x1="${left}" y1="${y(s * thr).toFixed(1)}" x2="${W - right}" y2="${y(s * thr).toFixed(1)}" stroke="${C.ink}" stroke-width="1.2" stroke-dasharray="4 3"/>`;
-  const named = new Set([3, 4, 7, 10, 11, 14, 21, 28, 161, 184, 364]);
+  const named = new Set([4, 7, 10, 11, 14, 18, 21, 27, 28, 364]);
+  const pts = [];
   items.forEach((it, k) => {
     if (!Number.isFinite(it.z)) return;
     const d = cur.lags[k];
-    b += `<circle cx="${x(d).toFixed(1)}" cy="${y(it.z).toFixed(1)}" r="${named.has(d) ? 3.6 : 2.2}" fill="${named.has(d) ? C.orange : C.accent}" fill-opacity="${named.has(d) ? 1 : 0.55}" stroke="#ffffff" stroke-width="${named.has(d) ? 1.2 : 0}"/>`;
+    const hl = named.has(d);
+    if (hl) pts.push({ d, cx: x(d), cy: y(it.z) });
+    b += `<circle cx="${x(d).toFixed(1)}" cy="${y(it.z).toFixed(1)}" r="${hl ? 3.6 : 2.2}" fill="${hl ? C.orange : C.accent}" fill-opacity="${hl ? 1 : 0.5}" stroke="#ffffff" stroke-width="${hl ? 1.2 : 0}"/>`;
   });
-  // label the named intervals, alternating above and below to avoid collisions
-  let flip = 0;
-  items.forEach((it, k) => {
-    const d = cur.lags[k];
-    if (!named.has(d) || !Number.isFinite(it.z)) return;
-    const up = it.z >= 0 ? flip++ % 2 === 0 : false;
-    const ty = it.z >= 0 ? y(it.z) - (up ? 8 : -14) : y(it.z) + 14;
-    b += text(x(d), ty, `${d}d`, { anchor: 'middle', size: 8.5, fill: C.ink, halo: true });
-  });
-  b += `<line x1="${left}" y1="12" x2="${left + 18}" y2="12" stroke="${C.ink}" stroke-width="1.2" stroke-dasharray="4 3"/>`;
-  b += text(left + 24, 15.5, 'family-wise 95% noise band', { size: 9.5 });
-  b += `<circle cx="${left + 190}" cy="12" r="2.4" fill="${C.accent}" fill-opacity="0.6"/>`;
-  b += text(left + 198, 15.5, 'one interval', { size: 9.5 });
-  b += dot(left + 282, 12, 3.6, C.orange);
-  b += text(left + 290, 15.5, 'intervals named in the hand analysis', { size: 9.5 });
-  b += text(W - right, 15.5, 'above 0 = repeats, below 0 = reversals', { anchor: 'end', size: 9.5, fill: C.muted });
+  // Greedy label placement: above, below, then further out, avoiding earlier labels and dots.
+  const boxes = pts.map((p) => ({ x0: p.cx - 4, x1: p.cx + 4, y0: p.cy - 4, y1: p.cy + 4 }));
+  const hit = (r) => boxes.some((q) => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0);
+  for (const p of pts.sort((a2, b2) => a2.cx - b2.cx)) {
+    const label = `${p.d}d`;
+    const w = 6 * label.length;
+    for (const dy of [-10, 16, -22, 28, -34, 40]) {
+      const ty = p.cy + dy;
+      const r = { x0: p.cx - w / 2, x1: p.cx + w / 2, y0: ty - 9, y1: ty + 2 };
+      if (ty < top - 2 || ty > bottom - 2 || hit(r)) continue;
+      boxes.push(r);
+      if (Math.abs(dy) > 16) b += line(p.cx, p.cy + Math.sign(dy) * 4, p.cx, ty + (dy < 0 ? 2 : -9), C.ink2, 0.8);
+      b += text(p.cx, ty, label, { anchor: 'middle', size: 8.5, fill: C.ink, halo: true });
+      break;
+    }
+  }
+  b += `<line x1="${left}" y1="13" x2="${left + 18}" y2="13" stroke="${C.ink}" stroke-width="1.2" stroke-dasharray="4 3"/>`;
+  b += text(left + 24, 16.5, 'family-wise 95% noise band', { size: 9.5 });
+  b += `<circle cx="${left + 190}" cy="13" r="2.4" fill="${C.accent}" fill-opacity="0.6"/>`;
+  b += text(left + 198, 16.5, 'one interval', { size: 9.5 });
+  b += dot(left + 282, 13, 3.6, C.orange);
+  b += text(left + 290, 16.5, 'intervals named in the hand analysis', { size: 9.5 });
+  b += text(W - right, 34, 'above 0: repeats · below 0: reversals', { anchor: 'end', size: 9, fill: C.muted });
   return svg(W, H, b, 'Same-result z-score for every day interval from 1 to 400 days, league-wide');
 }
 
@@ -413,7 +424,7 @@ function figSeasons(L) {
   let b = '';
   for (let v = -lim; v <= lim + 1e-9; v += 0.1) {
     b += line(left, y(v), W - right, y(v), Math.abs(v) < 1e-9 ? C.axis : C.grid);
-    b += text(left - 6, y(v) + 3.5, v.toFixed(1), { anchor: 'end', size: 9.5, fill: C.muted });
+    b += text(left - 6, y(v) + 3.5, (Math.abs(v) < 1e-9 ? 0 : v).toFixed(1), { anchor: 'end', size: 9.5, fill: C.muted });
   }
   for (const s of S.lags) {
     const cx = x(s.lag);
@@ -497,7 +508,7 @@ export function renderLabHtml(L) {
   // ---------------------------------------------------------------- cover
   push(`<div class="kicker">Lattice lab · all 32 NFL teams · ${L.settings.from}-${L.settings.to}</div>
 <h1>Do NFL results follow calendar lattices?</h1>
-<p class="lede">${num(L.hypotheses)} lattices on every franchise, ten families of patterns, two null models, a hold-out test on later seasons, season cycles and thirteen prediction models. ${signalMain.length ? `${signalMain.length} of ${keys.length} families show structure beyond the schedule` : 'None survives once each team’s schedule is accounted for'}.</p>
+<p class="lede">${num(L.hypotheses)} lattices on every franchise, ten families of patterns, two null models, a hold-out test on later seasons, season cycles and thirteen prediction models${L.own ? ', then lattices of my own against the point spread' : ''}. ${signalMain.length ? `${signalMain.length} of ${keys.length} families show structure beyond the schedule` : 'None survives once each team’s schedule is accounted for'}.</p>
 <p class="meta">Generated ${esc(L.generated.slice(0, 10))} · ${num(L.ml.rows)} team-games (both sides of ${num(L.ml.rows / 2)} games, ties left out) · ${num(reps)} null histories of each kind per test · data: nflverse games.csv</p>
 <div class="tiles">
   <div class="tile hl"><div class="label">Lattice families with a league-wide signal after correction</div><div class="value">${signalMain.length} of ${keys.length}</div><div class="note">spread-weighted shuffle, p &lt; ${ALPHA}</div></div>
@@ -514,15 +525,15 @@ export function renderLabHtml(L) {
   const otherLine = otherOnly.length
     ? `Under the plain shuffle, which ignores opponents and venues, ${otherOnly.map((v) => PLAIN[v.key].name.toLowerCase()).join(' and ')} ${otherOnly.length === 1 ? 'shows' : 'show'} weak, diffuse structure; it disappears under the spread-weighted shuffle, so it comes from who played whom and where, not from the calendar.`
     : 'The plain shuffle, which ignores opponents and venues, finds nothing either.';
-  push(`<div class="callout"><p><b>Bottom line.</b> ${verdictLine} ${otherLine} No team has more “own lattices” than noise produces (${flagged} flags against ${n1(flaggedExp)} expected). Each team’s strongest early pattern held up later ${pct(held / heldN, 0)} of the time, against ${pct(heldExp / heldN, 0)} for noise. ${mlVerdict}</p></div>`);
+  push(`<div class="callout"><p><b>Bottom line.</b> ${verdictLine} ${otherLine} No team has more “own lattices” than noise produces (${flagged} flags against ${n1(flaggedExp)} expected). ${mlVerdict}${L.own ? ` Part II: ${ownSummary(L).line.replace(/^./, (c) => c.toUpperCase())}` : ''}</p></div>`);
 
   push(`<h3>What the lab did</h3>
 <ul>
 <li><b>Ten families of lattices</b> (section 1): day intervals, two- and three-lookback calendar rules like 28/10, the 10-day / 4th-previous type, game-count repeats, streaks, phases (day number mod n), cycles in game order and in calendar time, and compressibility. ${num(L.hypotheses)} individual lattices in all, each tested on every team and on all 32 pooled.</li>
 <li><b>Two null models</b>, both keeping every team’s exact record in every season: a <i>shuffle</i> deals each season’s results out in random order; a <i>spread-weighted shuffle</i> deals the same wins out again but lets them land more often on games the team was favored in, so it also keeps who played whom and where. A lattice is real only if it beats both.</li>
 <li><b>Four kinds of evidence</b> per family: the strongest single lattice (corrected for the whole family), many weak lattices at once, each team’s own lattice (${num(reps)} null histories per team), and a hold-out test: patterns found in 1999-2012 scored on 2013-2025.</li>
-<li><b>Calibration:</b> the engine was fed pure-noise histories and flagged about as many teams as chance predicts (section 8), so a clean result is not a broken test.</li>
-<li><b>Season cycles</b> (the 23-year idea) and <b>thirteen prediction models</b> trained league-wide, walk-forward, against the point spread.</li>
+<li><b>Calibration and power</b> (section 8): on pure noise the engine flags about as many teams as chance predicts, and it finds lattices planted in noise.</li>
+<li><b>Season cycles</b> (the 23-year idea) and <b>thirteen prediction models</b> trained league-wide, walk-forward, against the point spread.${L.own ? ` <b>Part II</b> (sections 9-12) adds lattices of my own, scored against the spread and registered for the rest of 2026.` : ''}</li>
 </ul>`);
 
   // ---------------------------------------------------------------- 1. what was tested
@@ -553,12 +564,7 @@ ${table(
 <p class="tcap"><b>Table 1.</b> p-values by family and test. “Teams flagged” = teams whose own strongest lattice beats noise at p &lt; 0.05, real / expected from noise.</p>
 <table class="mx keep"><thead><tr><th rowspan="2">Family</th><th colspan="5" class="grp">${esc(nl.spread)} (main)</th><th class="split"></th><th colspan="4" class="grp">${esc(nl.shuffle)}</th></tr>
 <tr><th class="num">Strongest lattice</th><th class="num">Many weak ones</th><th class="num">Teams flagged</th><th class="num">Teams p</th><th class="num">Held up 2013-25</th><th class="split"></th><th class="num">Strongest</th><th class="num">Many weak</th><th class="num">Teams</th><th class="num">Held up</th></tr></thead><tbody>${matrixRows}</tbody></table>
-<p class="small">“Strongest lattice”: the best of all 32 teams pooled, corrected for every lattice in the family. “Many weak ones”: the average squared z-score of the whole family, which picks up diffuse structure no single lattice shows. “Held up”: each team’s strongest lattice found in 1999-2012, scored on 2013-2025. Phase lattices have no pooled test (pooled, every game is one win and one loss).</p>
-<figure>${figStrip(L)}<figcaption><b>Figure 1.</b> Every league-wide lattice as a dot (${num(keys.filter((k) => F[k].pooledTest).reduce((s, k) => s + F[k].nulls[MAIN].pooled.eligible, 0))} with enough games; count under each family). The black tick is the height that the strongest lattice of a pure-noise history stays below 95% of the time; a real lattice matters only above it. ${(() => {
-    const over = keys.filter((k) => F[k].pooledTest && F[k].nulls[MAIN].pooled.max.real > F[k].nulls[MAIN].pooled.max.null95);
-    return over.length ? `Above it: ${over.map((k) => PLAIN[k].name.toLowerCase()).join(', ')}.` : 'No family’s strongest lattice clears it.';
-  })()}</figcaption></figure>
-</section>`);
+<p class="small">“Strongest lattice”: the best of all 32 teams pooled, corrected for every lattice in the family. “Many weak ones”: the average squared z-score of the whole family, which picks up diffuse structure no single lattice shows. “Held up”: each team’s strongest lattice found in 1999-2012, scored on 2013-2025. Phase lattices have no pooled test (pooled, every game is one win and one loss).</p>`);
 
   // top items across families
   const topAll = keys
@@ -575,31 +581,39 @@ ${table(
   ['Family', 'Lattice', 'Real vs expected (games)', 'z', 'One-off p', 'Family p'],
   topAll.map(({ k, it }) => [PLAIN[k].name, esc(it.label), rateCell(k, it), signed(it.z), fp(it.p), fp(it.pFamily)]),
   { num: [3, 4, 5] },
-)}`);
+)}
+<figure>${figStrip(L)}<figcaption><b>Figure 1.</b> Every league-wide lattice as a dot (${num(keys.filter((k) => F[k].pooledTest).reduce((s, k) => s + F[k].nulls[MAIN].pooled.eligible, 0))} with enough games; count under each family). The black tick is the height that the strongest lattice of a pure-noise history stays below 95% of the time; a real lattice matters only above it. ${(() => {
+    const over = keys.filter((k) => F[k].pooledTest && F[k].nulls[MAIN].pooled.max.real > F[k].nulls[MAIN].pooled.max.null95);
+    return over.length ? `Above it: ${over.map((k) => PLAIN[k].name.toLowerCase()).join(', ')}.` : 'No family’s strongest lattice clears it.';
+  })()}</figcaption></figure>
+</section>`);
 
   // ---------------------------------------------------------------- 3. intervals & numerology
   const named = L.named;
-  const nrow = (x, scope) => {
+  const cellsFor = (x, scope) => {
     const a = x.scopes[scope][MAIN];
-    const o = x.scopes[scope][OTHER];
-    if (!Number.isFinite(a.z)) return [esc(x.label), a.n ? `${num(a.n)}` : '0', '–', '–', '–', '–'];
-    return [esc(x.label), num(a.n), `${pct(a.rate)} vs ${pct(a.nullRate)}`, signed(a.z), fp(a.p), fp(o.p)];
+    if (!Number.isFinite(a.z)) return [a.n ? num(a.n) : '0', '<span class="muted">too few</span>', '', ''];
+    return [num(a.n), `${pct(a.rate)} vs ${pct(a.nullRate)}`, signed(a.z), fp(a.p)];
   };
-  push(`<section class="page"><h2><span class="no">3</span>Day intervals and the named numbers</h2>
+  const namedRows = named.map((x) => {
+    const lg = x.scopes.pooled[MAIN];
+    if (!lg.n && !x.scopes[team][MAIN].n) return { cells: [esc(x.label), '<span class="muted">no two games this far apart</span>', '', '', '', '', '', '', ''] };
+    return [esc(x.label), ...cellsFor(x, 'pooled'), ...cellsFor(x, team)];
+  });
+  const namedTable = `<table class="named"><thead><tr><th rowspan="2">Lattice</th><th colspan="4" class="grp">All 32 teams</th><th class="split"></th><th colspan="4" class="grp">${esc(teamName)}</th></tr>
+<tr><th class="num">Cases</th><th class="num">Real vs expected</th><th class="num">z</th><th class="num">p</th><th class="split"></th><th class="num">Cases</th><th class="num">Real vs expected</th><th class="num">z</th><th class="num">p</th></tr></thead>
+<tbody>${namedRows
+    .map((r) => {
+      const cells = r.cells ?? r;
+      if (r.cells) return `<tr><td>${cells[0]}</td><td colspan="9">${cells[1]}</td></tr>`;
+      return `<tr><td>${cells[0]}</td>${cells.slice(1, 5).map((c) => `<td class="num">${c}</td>`).join('')}<td class="split"></td>${cells.slice(5).map((c) => `<td class="num">${c}</td>`).join('')}</tr>`;
+    })
+    .join('')}</tbody></table>`;
+  push(`<section><h2><span class="no">3</span>Day intervals and the named numbers</h2>
 <p>The hand analysis singled out intervals of 3, 4, 7, 10, 11, 14, 21 and 28 days and long lags of 1380, 1764, 1998, 2160 and 2760 days. Figure 2 shows every interval from 1 to 400 days at once, league-wide. Pairs of games only exist at some intervals, mostly near whole weeks, so the dots cluster at 7, 14, 21 … days.</p>
 <figure>${figLags(L)}<figcaption><b>Figure 2.</b> Same-result z-score for each day interval, all 32 teams pooled, against the ${esc(nl.spread).toLowerCase()}. Above zero the two games repeat more often than expected; below zero they reverse more often. The dashed lines are the family-wise noise band for all ${num(F.calLag.items)} intervals together: ${F.calLag.nulls[MAIN].pooled.max.real > F.calLag.nulls[MAIN].pooled.max.null95 ? 'the strongest interval crosses it' : 'no interval crosses it'}.</figcaption></figure>
-<p class="tcap"><b>Table 3.</b> The intervals and rules named in the hand analysis, all 32 teams pooled. “Real vs expected”: same-result rate against what the ${esc(nl.spread).toLowerCase()} expects; p-values are for that one lattice alone (no correction), against each null.</p>
-${table(
-  ['Lattice', 'Cases', 'Real vs expected', 'z', `p (${esc(nl.spread).toLowerCase()})`, `p (${esc(nl.shuffle).toLowerCase()})`],
-  named.map((x) => nrow(x, 'pooled')),
-  { num: [1, 3, 4, 5] },
-)}
-<p class="tcap"><b>Table 4.</b> The same lattices for ${esc(teamName)} alone. With a few dozen cases each, a rate of 60% or 40% is ordinary noise.</p>
-${table(
-  ['Lattice', 'Cases', 'Real vs expected', 'z', `p (${esc(nl.spread).toLowerCase()})`, `p (${esc(nl.shuffle).toLowerCase()})`],
-  named.map((x) => nrow(x, team)),
-  { num: [1, 3, 4, 5] },
-)}
+<p class="tcap"><b>Table 3.</b> The intervals and rules named in the hand analysis. \u201cReal vs expected\u201d: how often the two games had the same result, against what the ${esc(nl.spread).toLowerCase()} expects. p-values are for that one lattice alone, with no correction for the others (the plain shuffle gives similar values). \u201cToo few\u201d: under ${L.settings.minN} cases.</p>
+${namedTable}
 ${numerologyNote(L)}
 </section>`);
 
@@ -631,7 +645,7 @@ ${table(
 </section>`);
 
   // ---------------------------------------------------------------- 5. streaks, cycles
-  push(`<section class="page"><h2><span class="no">5</span>Streaks, phases and cycles</h2>
+  push(`<section><h2><span class="no">5</span>Streaks, phases and cycles</h2>
 <p>Streak patterns ask the momentum question directly: after W-W or L-L-L, is the next result more likely to repeat? Figure 5 compares the real win rate after every run of up to three results with what the ${esc(nl.spread).toLowerCase()} expects. The expectation is not 50%: teams that just won three straight are usually good teams, and the null keeps that.</p>
 <figure>${figStreaks(L)}<figcaption><b>Figure 5.</b> Win rate in the next game after each run of results (oldest first; “W-L” = a win, then a loss), all 32 teams. The gray bar is the 95% range expected from each team’s season records and schedule. Streak family, league-wide: strongest pattern p = ${fp(F.markov.nulls[MAIN].pooled.max.p)}, whole family p = ${fp(F.markov.nulls[MAIN].pooled.meanZ2.p)}.</figcaption></figure>
 <p>Cycles are the Fourier view of a lattice: a result that repeats every k games, or every P days, puts a peak in the periodogram at that cycle length. Both periodograms follow the noise band closely. The schedule’s own rhythm (weekly games, bye weeks, 17-game seasons) is in both the real data and the noise, so it cancels out.</p>
@@ -643,7 +657,7 @@ ${table(
   const S = L.seasons;
   const lagRow = (Lg) => S.lags.find((x) => x.lag === Lg);
   const own23 = S.team?.pairs.find((p) => p.lag === 23);
-  push(`<section class="page"><h2><span class="no">6</span>Season cycles: the 23-year batches</h2>
+  push(`<section><h2><span class="no">6</span>Season cycles: the 23-year batches</h2>
 <p>The hand analysis proposed 23-year batches (1999 − 1976 = 23; 161 = 7 × 23; 184 = 8 × 23). If seasons echo 23 years later, a team’s season win rate should correlate with its win rate 23 seasons before. Figure 7 shows that correlation for every gap from 1 to ${S.lags.length} seasons, all 32 teams pooled, each team measured from its own ${S.window.from}-${S.window.to} average.</p>
 <figure>${figSeasons(L)}<figcaption><b>Figure 7.</b> Correlation between season win rates L seasons apart. Gray: the 95% range if seasons had no memory (${num(S.permReps)} random orderings of each team’s seasons). Orange: what the point spreads imply, from ${num(S.marketReps)} replays of every game. Lags 7, 8 and 23 are in bold.</figcaption></figure>
 ${table(
@@ -697,30 +711,37 @@ ${table(
       const c = (x) => (x ? [x.pooledMaxP === null ? '–' : fp(x.pooledMaxP), x.pooledMeanZ2P === null ? '–' : fp(x.pooledMeanZ2P), `${x.teamsSig} / ${n1(x.teamsSigNull)}`] : ['–', '–', '–']);
       return [PLAIN[k].name, ...c(b), ...c(a)];
     });
-    push(`<section class="page"><h2><span class="no">8</span>Calibration: does the engine cry wolf?</h2>
+    push(`<section><h2><span class="no">8</span>Calibration: does the engine cry wolf?</h2>
 <p>A test that flags everything is useless, and so is one that can never flag anything. To check both, one extra history was drawn from each null model — pure noise by construction — and run through the whole engine as if it were the real data, against ${num(pl.spread?.reps ?? pl.shuffle?.reps)} fresh null histories. A calibrated engine gives it ordinary p-values and flags about 1.6 teams per family.</p>
 <p class="tcap"><b>Table 9.</b> The engine on pure noise: p-values and teams flagged (flagged / expected).</p>
 <table class="mx keep"><thead><tr><th rowspan="2">Family</th><th colspan="3" class="grp">Noise from the ${esc(nl.spread).toLowerCase()}</th><th colspan="3" class="grp">Noise from the ${esc(nl.shuffle).toLowerCase()}</th></tr>
 <tr><th class="num">Strongest</th><th class="num">Many weak</th><th class="num">Teams</th><th class="num">Strongest</th><th class="num">Many weak</th><th class="num">Teams</th></tr></thead>
 <tbody>${rows.map((r) => `<tr>${r.map((c, i) => `<td${i ? ' class="num"' : ''}>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>
-<p>${placeboNote(pl, keys)} This matters for the reading of the real results: the test is able to say “nothing”, and able to say “something”, and on the real NFL results it says ${signalMain.length ? 'little' : 'nothing'}.</p>
+<p>${placeboNote(pl, keys)}</p>
 <p class="small">A first version of the engine used null models that re-played games from the point spread without keeping season records. On this check they flagged pure noise as a pattern (real team-seasons are more lopsided than spread-based replays), so they were replaced by the two record-keeping nulls used here.</p>
+${L.power ? powerHtml(L) : ''}
 </section>`);
   }
 
+  // ---------------------------------------------------------------- 9-12. my own lattices
+  if (L.own) push(ownHtml(L));
+
   // ---------------------------------------------------------------- 9. conclusions
-  push(`<section class="page"><h2><span class="no">9</span>What it means</h2>
-<div class="callout"><p><b>In plain terms:</b> across ${num(L.hypotheses)} lattices on all 32 teams since ${L.settings.from}, the results look like what you get when each team’s season record is dealt out over its schedule at random, with a bit more of the wins going to the games the betting line favored. Intervals like 7, 10, 14 and 28 days, rules like 28/10 and 10-day/4th-previous, the long numbers (1380, 1764, 1998, 2160, 2760) and the 23-year batches all sit where chance puts them.</p></div>
+  const own = L.own ? ownSummary(L) : null;
+  push(`<section class="page"><h2><span class="no">${L.own ? 13 : 9}</span>What it means</h2>
+<div class="callout"><p><b>In plain terms:</b> across ${num(L.hypotheses)} lattices on all 32 teams since ${L.settings.from}, the results look like what you get when each team’s season record is dealt out over its schedule at random, with a bit more of the wins going to the games the betting line favored. Intervals like 7, 10, 14 and 28 days, rules like 28/10 and 10-day/4th-previous, the long numbers (1380, 1764, 1998, 2160, 2760) and the 23-year batches all sit where chance puts them.${own ? ` My own lattices do no better against the point spread: ${own.line}` : ''}</p></div>
 <ul>
 <li><b>Why hand-found lattices look convincing.</b> Searching many intervals and rules on one team always turns up some that were right 8 or 9 times in 10 by luck. That is why every family here is judged by its strongest lattice against the strongest lattices of noise histories, and by whether it holds up on later seasons. Patterns found that way fail on fresh seasons and on other teams, which is what happened to 28/10 and 10-day/4th-previous in the Seattle analysis.</li>
 <li><b>The 3-4-7-10-11-14 numbers are the schedule.</b> NFL games fall on a weekly grid (Sunday, Monday, Thursday, the occasional Saturday), so the gaps between games cluster at a handful of values: 3, 4, 6, 7, 8, 10, 11, 13 and 14 days. They are real intervals, but they carry no information about results.</li>
 <li><b>What does carry information</b> is ordinary team quality: good teams keep winning within a season and for a year or two, franchises have long eras, and the betting line captures nearly all of it. That is why the point spread calls ${pct(mlBy.market.overall.accuracy)} of games and no lattice model beats it.</li>
-<li><b>What would change this verdict:</b> a lattice written down before the games it predicts, beating the point spread on those games over a few seasons. The forward ledger in the Seattle analysis (<code>node cli.js ledger</code>) is set up to score exactly that.</li>
+<li><b>What would change this verdict:</b> a lattice written down before the games it predicts, beating the point spread on those games over a few seasons. The forward ledger (<code>node cli.js ledger</code>) is set up to score exactly that${own ? `: it now holds ${own.registered} lattices dated ${own.date}, yours and mine` : ''}.</li>
 </ul>
 <h3>Reproduce</h3>
-<pre>node cli.js lab            # this report: results/lab.json + results/lattice-lab.pdf (~7 min)
-node cli.js lab --quick    # fewer null histories (~2 min)
-node cli.js lab-pdf        # rebuild the PDF from results/lab.json</pre>
+<pre>node cli.js lab            # this report: results/lab.json + results/lattice-lab.pdf (~12 min)
+node cli.js lab --quick    # fewer null histories (~3 min)
+node cli.js lab --parts own,power   # recompute only some parts
+node cli.js lab-pdf        # rebuild the PDF from results/lab.json
+node cli.js ledger         # score the registered lattices on games after their date</pre>
 <h3>Method notes</h3>
 <dl class="gloss">
 <dt>z-score of a lattice</dt><dd>For repeat and streak families, (hits − n·μ) / √(n·v), where μ is the lattice’s average rate across null histories and v its observed per-case variance there (so overlap between cases is counted). For cycles and compressibility, (value − null mean) / null sd. Lattices with fewer than ${L.settings.minN} cases are skipped.</dd>
@@ -728,19 +749,315 @@ node cli.js lab-pdf        # rebuild the PDF from results/lab.json</pre>
 <dt>Teams flagged</dt><dd>Each team gets its own family-wise p from ${num(reps)} null histories; the count with p &lt; 0.05 is compared with the same count in every null history (each ranked against the others).</dd>
 <dt>Hold-out</dt><dd>Lattices are ranked on 1999-${L.settings.discTo} and scored on ${L.settings.discTo + 1}-${L.settings.to}. The z-score in the later half is signed by the direction found earlier, so + means the pattern continued. The same pick-then-score procedure is run on every null history.</dd>
 <dt>Spread-weighted shuffle</dt><dd>Within each team-season, W wins are placed on the games with probability proportional to the product of e<sup>b·spread</sup> over the chosen games (a conditional Bernoulli draw, sampled exactly by dynamic programming). b is the conditional-logit slope, ${L.market.bWithin.toFixed(3)}; across all games the spread’s slope is ${L.market.b.toFixed(3)}.</dd>
+${L.own ? `<dt>Against the spread</dt><dd>A lattice picks one side of a game: the side that fits its conditions (or the other side, for a fade). Games where both sides fit, or where the point spread is missing, are skipped; pushes are not counted. A pick wins when its side covers (final margin beats the spread). The mechanism lattices were written down before any of them was scored and are corrected together (Holm). The machine search\u2019s family-wise p is the share of sign-flipped histories (each game\u2019s cover outcome flipped with probability 1/2) whose best lattice is at least as strong.</dd>` : ''}
 <dt>Machine learning</dt><dd>Penalties are chosen on the last three training seasons, then refit on all training seasons. Ridge and lasso are exact logistic fits (Newton and FISTA); the forest has 100 trees, depth ≤ 8, leaves of ≥ 40 games; the network is the Seattle analysis’s (16 tanh units, 3 seeds, early stopping).</dd>
 </dl>`);
-  push(`<p class="small">Data: nflverse <code>games.csv</code> (Lee Sharpe), every NFL game since 1999; relocated franchises merged (OAK→LV, SD→LAC, STL→LA). Run time ${Math.round(L.seconds / 60)} min on ${L.settings.teams.length} teams.</p></section>`);
+  push(`<p class="small">Data: nflverse <code>games.csv</code> (Lee Sharpe), every NFL game since 1999; relocated franchises merged (OAK→LV, SD→LAC, STL→LA).${L.timings && Object.keys(L.timings).length >= 6 ? ` Run time ${Math.round(L.seconds / 60)} min.` : ''}</p></section>`);
 
   const css = `${CSS}
 table.mx { font-size: 8.3pt; }
+table.named { font-size: 8.1pt; }
+table.named th.grp { text-align: center; border-bottom: 1px solid ${C.grid}; }
+table.named td.split, table.named th.split { width: 8pt; border-bottom: none; }
 table.mx th.grp { text-align: center; border-bottom: 1px solid ${C.grid}; }
 table.mx td.split, table.mx th.split { width: 6pt; border-bottom: none; }
 td.sig1 { background: ${C.accentSoft}; }
 td.sig2 { background: #cde2fb; font-weight: 700; }
 .muted { color: ${C.muted}; }
+table.mech { font-size: 8pt; }
+table.mech td { padding-top: 2.2pt; padding-bottom: 2.2pt; }
+table.mech td .muted { font-size: 7.4pt; }
+table.mech tr.ctl td { background: #f6f5f1; }
 `;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Lattice lab</title><style>${css}</style></head><body>${html.join('\n')}</body></html>`;
+}
+
+// ---------------------------------------------------------------- power
+function powerHtml(L) {
+  const P = L.power;
+  const rows = P.plants.map((x) => [
+    esc(x.label),
+    `${pct(x.rate)} vs ${pct(x.nullRate)}`,
+    num(Math.round(x.n)),
+    `${x.detected} of ${x.runs}`,
+    `${x.topItem} of ${x.runs}`,
+    fp(x.medianP),
+  ]);
+  const league = P.plants.filter((x) => x.scope === 'pooled');
+  const team = P.plants.filter((x) => x.scope !== 'pooled');
+  const firstFound = (list) => list.find((x) => x.detected >= Math.ceil(0.8 * x.runs));
+  const lf = firstFound(league.filter((x) => x.id === 'lag7'));
+  const of = firstFound(league.filter((x) => x.id === 'order'));
+  const tf = firstFound(team);
+  const pts = (x) => `${Math.round(100 * (x.rate - x.nullRate))} points`;
+  return `<h3>Would it find a real lattice?</h3>
+<p>The other half of calibration is power: lattices of known strength were planted in noise histories and the engine was asked to find them (${P.runs} plantings per strength, ${num(P.reps)} null histories each).</p>
+<p class="tcap"><b>Table 10.</b> Planted lattices. “Found”: the family-wise p-value (league-wide, or the team’s own) was below 0.05. “Top-ranked”: the planted lattice was the strongest of its whole family.</p>
+${table(['Planted lattice', 'Planted rate vs expected', 'Cases', 'Found', 'Top-ranked', 'Median p'], rows, { num: [1, 2, 3, 4, 5] })}
+<p>${lf ? `League-wide, a 7-day repeat lattice that moves the rate by about ${pts(lf)} is found ${lf.detected} times in ${lf.runs}. ` : ''}${of ? `A 10-day / 4th-previous rule is found once it repeats about ${pct(of.rate, 0)} of the time instead of ${pct(of.nullRate, 0)}, far short of the 90% the hand analysis reported for Seattle. ` : ''}${tf ? `For one team the bar is higher: Seattle’s 7-day interval must move about ${pts(tf)}.` : 'For one team, even strong lattices are hard to find.'} The engine sees lattices of the size the hand analysis described, if they span more than a handful of games, so its silence on the real results is a finding, not a blind spot.</p>`;
+}
+
+// ---------------------------------------------------------------- my own lattices
+const MECH_NAMES = {
+  rest3: 'More rest: 3+ days',
+  bye: 'Off a bye',
+  thuHome: 'Thursday home team',
+  earlyWest: 'West team at 1 pm ET (fade)',
+  nightWest: 'West vs East at night',
+  travel: '2+ time zones (fade road)',
+  revenge: 'Revenge rematch',
+  bounce: 'After a 21+ point loss',
+  letdown: 'After a 21+ point win (fade)',
+  atsHot: '3 straight covers (fade)',
+  atsCold: '3 straight non-covers',
+  divDog: 'Division underdog',
+  bigDog: 'Underdog by 10+',
+  earlyLast: 'Weeks 1-4, bad last season',
+  primeFav: 'Big favorite at night (fade)',
+  moon: 'Full moon, home team (control)',
+  hand1004: 'Hand rule: 10-day / 4th',
+  hand2810: 'Hand rule: 28/10',
+  'search-1': 'Machine lattice #1',
+  'search-2': 'Machine lattice #2',
+  'search-3': 'Machine lattice #3',
+};
+const rec = (x) => (x && x.n ? `${x.hits}/${x.n}` : '–');
+const rate = (x) => (x && x.n ? pct(x.rate) : '–');
+
+function figMechanisms(O) {
+  const ms = O.mechanisms;
+  const W = 640;
+  const left = 186;
+  const right = 16;
+  const top = 42;
+  const rowH = 21;
+  const H = top + ms.length * rowH + 34;
+  const lo = 0.25;
+  const hi = 0.85;
+  const x = (v) => left + ((Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo)) * (W - left - right);
+  let b = '';
+  for (let v = 0.3; v <= 0.8 + 1e-9; v += 0.1) {
+    b += line(x(v), top - 8, x(v), H - 30, Math.abs(v - 0.5) < 1e-9 ? C.axis : C.grid);
+    b += text(x(v), H - 16, pct(v, 0), { anchor: 'middle', size: 9.5, fill: C.muted });
+  }
+  b += `<line x1="${x(O.breakEven).toFixed(1)}" y1="${top - 8}" x2="${x(O.breakEven).toFixed(1)}" y2="${H - 30}" stroke="${C.ink}" stroke-width="1" stroke-dasharray="4 3"/>`;
+  b += text(x(O.breakEven) + 5, top - 12, 'break-even at -110: 52.4%', { size: 9, fill: C.ink2 });
+  b += text((left + W - right) / 2, H - 3, 'Share of picks that covered the spread (95% range)', { anchor: 'middle', size: 9.5, fill: C.ink2 });
+  ms.forEach((m, i) => {
+    const cy = top + i * rowH + rowH / 2;
+    b += text(left - 12, cy + 3.5, MECH_NAMES[m.id] ?? m.id, { anchor: 'end', size: 9.5, fill: m.control ? C.muted : C.ink2 });
+    for (const [w, dy, col] of [['disc', -3.5, C.accent], ['valid', 3.5, C.orange]]) {
+      const s = m[w];
+      if (!s.n) continue;
+      b += line(x(s.lo), cy + dy, x(s.hi), cy + dy, col, 1.6);
+      b += `<circle cx="${x(s.rate).toFixed(1)}" cy="${(cy + dy).toFixed(1)}" r="3.3" fill="${col}" stroke="#ffffff" stroke-width="1.2"/>`;
+    }
+  });
+  b += dot(left, 13, 3.6, C.accent);
+  b += text(left + 9, 16.5, '1999-2012', { size: 9.5 });
+  b += dot(left + 90, 13, 3.6, C.orange);
+  b += text(left + 99, 16.5, '2013-2025', { size: 9.5 });
+  return svg(W, H, b, 'Cover rate of each mechanism lattice in two periods');
+}
+
+function figResidual(O) {
+  const items = [
+    ...O.residual.game.map((x) => ({ ...x, label: String(x.lag), group: 'games' })),
+    ...O.residual.day.map((x) => ({ ...x, label: String(x.lag), group: 'days' })),
+  ].map((x) => ({ ...x, sd: x.sd ?? Math.abs(x.r / x.z) }));
+  const W = 640;
+  const H = 230;
+  const left = 46;
+  const right = 10;
+  const top = 30;
+  const bottom = H - 46;
+  const gapSlots = 1;
+  const slots = items.length + gapSlots;
+  const bw = (W - left - right) / slots;
+  const lim = Math.max(0.05, Math.ceil(Math.max(...items.map((x) => Math.max(Math.abs(x.r), 1.96 * x.sd))) * 50) / 50);
+  const y = (v) => bottom - ((v + lim) / (2 * lim)) * (bottom - top);
+  let b = '';
+  const step = lim > 0.06 ? 0.02 : 0.01;
+  for (let v = -lim; v <= lim + 1e-9; v += step) {
+    b += line(left, y(v), W - right, y(v), Math.abs(v) < 1e-9 ? C.axis : C.grid);
+    b += text(left - 6, y(v) + 3.5, (Math.abs(v) < 1e-9 ? 0 : v).toFixed(2), { anchor: 'end', size: 9, fill: C.muted });
+  }
+  let slot = 0;
+  let prevGroup = null;
+  const groupSpan = {};
+  for (const it of items) {
+    if (prevGroup && it.group !== prevGroup) slot += gapSlots;
+    prevGroup = it.group;
+    const cx = left + (slot + 0.5) * bw;
+    (groupSpan[it.group] ??= []).push(cx);
+    b += `<rect x="${(cx - bw * 0.32).toFixed(1)}" y="${y(1.96 * it.sd).toFixed(1)}" width="${(bw * 0.64).toFixed(1)}" height="${(y(-1.96 * it.sd) - y(1.96 * it.sd)).toFixed(1)}" rx="3" fill="${C.grid}"/>`;
+    b += dot(cx, y(it.r), 3.6, C.accent);
+    b += text(cx, bottom + 13, it.label, { anchor: 'middle', size: 8.5, fill: C.muted });
+    slot++;
+  }
+  for (const [g, xs] of Object.entries(groupSpan)) {
+    b += text((xs[0] + xs[xs.length - 1]) / 2, bottom + 28, g === 'games' ? 'games apart (same season)' : 'days apart', { anchor: 'middle', size: 9.5, fill: C.ink2 });
+  }
+  b += `<rect x="${left}" y="8" width="16" height="9" rx="3" fill="${C.grid}"/>`;
+  b += text(left + 22, 16, 'no echo: 95% range (sign-flipped histories)', { size: 9.5 });
+  b += dot(left + 300, 12, 3.6, C.accent);
+  b += text(left + 309, 16, 'real correlation of the two surprises', { size: 9.5 });
+  return svg(W, H, b, 'Correlation of spread surprises at game and day intervals');
+}
+
+function figSearch(O) {
+  const pts = O.search.lattices.filter((x) => x.valid.n);
+  const W = 640;
+  const H = 300;
+  const left = 50;
+  const right = 20;
+  const top = 30;
+  const bottom = H - 40;
+  const dx = pts.map((p) => p.discovery.hits / p.discovery.n);
+  const x0 = Math.floor(Math.min(0.5, ...dx) * 20) / 20;
+  const x1 = Math.ceil(Math.max(...dx) * 20) / 20 + 0.02;
+  const y0 = 0.35;
+  const y1 = Math.max(0.7, x1);
+  const x = (v) => left + ((v - x0) / (x1 - x0)) * (W - left - right);
+  const y = (v) => bottom - ((v - y0) / (y1 - y0)) * (bottom - top);
+  let b = '';
+  for (let v = 0.35; v <= y1 + 1e-9; v += 0.05) {
+    b += line(left, y(v), W - right, y(v), Math.abs(v - 0.5) < 1e-9 ? C.axis : C.grid);
+    b += text(left - 6, y(v) + 3.5, pct(v, 0), { anchor: 'end', size: 9.5, fill: C.muted });
+  }
+  for (let v = x0; v <= x1 + 1e-9; v += 0.05) b += text(x(v), bottom + 14, pct(v, 0), { anchor: 'middle', size: 9.5, fill: C.muted });
+  b += text((left + W - right) / 2, bottom + 30, 'Cover rate on 1999-2012, where each lattice was found', { anchor: 'middle', size: 9.5, fill: C.ink2 });
+  b += text(12, (top + bottom) / 2, 'Cover rate on 2013-2025', { anchor: 'middle', size: 9.5, fill: C.ink2 }).replace('<text ', `<text transform="rotate(-90 12 ${((top + bottom) / 2).toFixed(1)})" `);
+  const d0 = Math.max(x0, y0);
+  const d1 = Math.min(x1, y1);
+  b += `<line x1="${x(d0).toFixed(1)}" y1="${y(d0).toFixed(1)}" x2="${x(d1).toFixed(1)}" y2="${y(d1).toFixed(1)}" stroke="${C.ink2}" stroke-width="1" stroke-dasharray="3 3"/>`;
+  b += text(x(d1) - 6, y(d1) + 16, 'if they held up', { anchor: 'end', size: 9, fill: C.ink2, halo: true });
+  b += `<line x1="${left}" y1="${y(O.breakEven).toFixed(1)}" x2="${W - right}" y2="${y(O.breakEven).toFixed(1)}" stroke="${C.ink}" stroke-width="1" stroke-dasharray="4 3"/>`;
+  b += text(W - right, y(O.breakEven) - 5, 'break-even 52.4%', { anchor: 'end', size: 9, fill: C.ink2, halo: true });
+  pts.forEach((p) => {
+    const vx = p.discovery.hits / p.discovery.n;
+    b += dot(x(vx), y(p.valid.rate), 4.2, C.accent);
+  });
+  pts.slice(0, 3).forEach((p) => b += text(x(p.discovery.hits / p.discovery.n) + 7, y(p.valid.rate) + 3.5, `#${p.rank}`, { size: 9, fill: C.ink, halo: true }));
+  return svg(W, H, b, 'Machine-found lattices: cover rate where found versus later');
+}
+
+function seattleNote(O, team) {
+  const name = TEAM_NAMES[team] ?? team;
+  const ms = O.mechanisms.filter((m) => m.team?.n >= 20);
+  if (!ms.length) return '';
+  const best = [...ms].sort((a, b) => a.team.p - b.team.p)[0];
+  return `In ${esc(name)} games the samples are small: the most extreme, ${esc((MECH_NAMES[best.id] ?? best.id).toLowerCase())}, is ${rec(best.team)} (p = ${fp(best.team.p)}), one of ${ms.length} checked.`;
+}
+
+function teamsNote(O) {
+  const ms = O.mechanisms.filter((m) => Number.isFinite(m.teams.p));
+  const low = ms.filter((m) => m.teams.p < 0.05);
+  const minP = Math.min(...ms.map((m) => m.teams.p));
+  const holm = Math.min(1, minP * ms.length);
+  return `Do the lattices work for some franchises and not others? ${low.length} of ${ms.length} show a team-to-team spread with p &lt; 0.05 (${n1(0.05 * ms.length)} expected by chance; the smallest, p = ${fp(minP)}, is ${fp(holm)} after correcting for ${ms.length}), so ${holm < 0.05 ? 'one lattice may differ by team' : 'none belongs to particular franchises either'}.`;
+}
+
+export function ownSummary(L) {
+  const O = L.own;
+  const real = O.mechanisms.filter((m) => !m.control && !m.id.startsWith('hand'));
+  const best = [...real].sort((a, b) => a.all.p - b.all.p)[0];
+  const survive = real.filter((m) => m.all.pHolm < 0.05);
+  const beatBE = real.filter((m) => m.valid.n && m.valid.rate > O.breakEven);
+  const v = O.search.validation;
+  return {
+    registered: (O.forward?.length ?? 0) + 2,
+    date: O.forward?.[0]?.registered ?? L.generated.slice(0, 10),
+    survive,
+    best,
+    beatBE,
+    line: `${survive.length ? `${survive.length} of ${real.length} lattices with a physical reason survive correction` : `none of the ${real.length} lattices with a physical reason survives correction`} (strongest: ${esc((MECH_NAMES[best.id] ?? best.id).toLowerCase())}, ${pct(best.all.rate)} over 1999-2025, corrected p = ${fp(best.all.pHolm)}), and the ${O.search.lattices.length} best of ${num(O.search.tried)} machine-found lattices covered ${pct(v.rate)} of ${num(v.picks)} picks on the seasons after they were found.`,
+  };
+}
+
+function ownHtml(L) {
+  const O = L.own;
+  const S = ownSummary(L);
+  const B = O.baselines;
+  const real = O.mechanisms.filter((m) => !m.control && !m.id.startsWith('hand'));
+  const moon = O.mechanisms.find((m) => m.control);
+  const hand = O.mechanisms.filter((m) => m.id.startsWith('hand'));
+  const mechRows = O.mechanisms.map((m) => ({
+    cells: [
+      `<b>${esc(MECH_NAMES[m.id] ?? m.id)}</b><br><span class="muted">${esc(m.why)}</span>`,
+      num(m.all.n),
+      `${rate(m.all)}`,
+      fp(m.all.p),
+      fp(m.all.pHolm),
+      rate(m.valid),
+      m.fresh.n ? `${rec(m.fresh)}` : '–',
+      Number.isFinite(m.teams.p) ? fp(m.teams.p) : '–',
+      m.team?.n ? rec(m.team) : '–',
+    ],
+    cls: m.control ? 'ctl' : '',
+  }));
+  const R = O.residual;
+  const allRes = [...R.game.map((x) => ({ ...x, kind: 'game' })), ...R.day.map((x) => ({ ...x, kind: 'day' }))];
+  const minFam = [...allRes].sort((a, b) => a.pFamily - b.pFamily)[0];
+  const lag1 = R.game.find((x) => x.lag === 1);
+  const Sx = O.search;
+  const top = Sx.lattices.slice(0, 10);
+  const forward = O.forward ?? [];
+  const open = forward.flatMap((r) => r.picks.filter((p) => p.cover === null).map((p) => ({ ...p, id: r.id })));
+  const byGame = new Map();
+  for (const p of open) {
+    const k = `${p.date}|${p.game}`;
+    if (!byGame.has(k)) byGame.set(k, []);
+    byGame.get(k).push(p);
+  }
+  const line2 = (p) => `${esc(p.pick)} ${p.spread > 0 ? '−' : '+'}${Math.abs(p.spread)}`;
+  const openRows = [...byGame.entries()]
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([k, ps]) => {
+      const [date, game] = k.split('|');
+      const [, , away, home] = game.split('_');
+      const sides = new Map();
+      for (const p of ps) {
+        const key = line2(p);
+        if (!sides.has(key)) sides.set(key, []);
+        sides.get(key).push(p.id.replace('ats-', ''));
+      }
+      return [date.slice(5), `${esc(away)} at ${esc(home)}`, [...sides].map(([side, ids]) => `<b>${side}</b> <span class="muted">(${ids.map((i) => esc(MECH_NAMES[i] ?? i)).join(', ')})</span>`).join('<br>')];
+    });
+  // picks needed to show a 55% edge beats break-even with 80% power (one-sided 5%)
+  const need = (p1, p0) => Math.ceil(((1.645 * Math.sqrt(p0 * (1 - p0)) + 0.8416 * Math.sqrt(p1 * (1 - p1))) / (p1 - p0)) ** 2);
+  const perSeason = Math.round(real.reduce((s, m) => s + m.all.n, 0) / real.length / 27);
+
+  return `<section class="page"><div class="kicker">Part II</div><h2><span class="no">9</span>Lattices of my own, against the point spread</h2>
+<p>Everything so far tested the lattices from the hand analysis and their relatives on wins and losses. This part looks for lattices of my own, and scores them the way that decides whether there is an edge: against the point spread. A lattice picks a side (back a team, or fade it), and the pick wins if that side covers. At the usual −110 odds a pick must win ${pct(O.breakEven)} of the time just to break even, so 50% means no edge. For reference, over ${O.windows.disc[0]}-${O.windows.valid[1]} home teams covered ${pct(B.home.all.rate)} of the time and favorites ${pct(B.favorites.all.rate)} (so underdogs ${pct(1 - B.favorites.all.rate)}).</p>
+<p>First, lattices with a reason to exist, written down before any of them was scored: rest and byes, the body clock (a 1 pm Eastern kickoff is 10 am for a Pacific team; at night a Pacific team is at its daily peak), travel across time zones, short weeks, rematches, overreaction to blowouts and to cover streaks, and the betting-folklore angles (division and big underdogs, big favorites at night). A full-moon lattice is included as a control that should show nothing. The two hand-found rules are included as bets.</p>
+<figure>${figMechanisms(O)}<figcaption><b>Figure 9.</b> Cover rate of each lattice in ${O.windows.disc[0]}-${O.windows.disc[1]} (blue) and ${O.windows.valid[0]}-${O.windows.valid[1]} (orange), with 95% ranges. A real edge sits right of the dashed break-even line in both periods.</figcaption></figure>
+<p class="tcap"><b>Table 11.</b> The lattices with a reason, ${O.windows.disc[0]}-${O.windows.valid[1]}. “Corrected”: Holm over the ${O.mechanisms.length} lattices. “2026”: games played so far this season (through ${esc(O.lastPlayed)}), not used anywhere else. “Teams differ”: p-value that the cover rate differs by team (32 teams, chi-square). “Seattle”: picks in Seattle games.</p>
+<table class="mech"><thead><tr><th>Lattice</th><th class="num">Picks</th><th class="num">Covered</th><th class="num">p</th><th class="num">Corrected</th><th class="num">2013-25</th><th class="num">2026</th><th class="num">Teams differ</th><th class="num">Seattle</th></tr></thead>
+<tbody>${mechRows.map((r) => `<tr class="${r.cls}">${r.cells.map((c, i) => `<td${i ? ' class="num"' : ''}>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>
+<p>${S.survive.length ? `${S.survive.length} lattice${S.survive.length > 1 ? 's' : ''} survive${S.survive.length > 1 ? '' : 's'} the correction.` : `None survives the correction.`} The strongest, ${esc((MECH_NAMES[S.best.id] ?? S.best.id).toLowerCase())}, covered ${pct(S.best.all.rate)} of ${num(S.best.all.n)} picks (corrected p = ${fp(S.best.all.pHolm)}) and ${pct(S.best.valid.rate)} in ${O.windows.valid[0]}-${O.windows.valid[1]}${S.best.valid.rate < O.breakEven ? ', below break-even' : ''}. ${S.beatBE.length} of ${real.length} beat the break-even line on ${O.windows.valid[0]}-${O.windows.valid[1]}, about what luck gives when the true rate is 50-51%. The moon control covered ${pct(moon.all.rate)}. The hand rules as bets: ${hand.map((m) => `${esc((MECH_NAMES[m.id] ?? m.id).replace('Hand rule: ', ''))} ${rec(m.all)} (${pct(m.all.rate)}, p = ${fp(m.all.p)})`).join('; ')}, on every team since ${O.windows.disc[0]}. ${teamsNote(O)} ${seattleNote(O, L.team)}</p>
+</section>
+<section><h2><span class="no">10</span>What the market did not expect</h2>
+<p>The spread is the market’s best guess of the margin; the surprise is the real margin minus the spread. If any lattice drove results beyond what the market knows, surprises would echo: a team that beat the spread would beat it again a set number of games or days later. Figure 10 correlates each team’s surprises at every interval from 1 to 8 games and at ${R.day.length} day intervals, against ${num(O.residual.reps ?? 2000)} histories where each game’s surprise had its sign flipped at random.</p>
+<figure>${figResidual(O)}<figcaption><b>Figure 10.</b> Correlation between a team’s spread surprises at the given interval, all teams ${O.windows.disc[0]}-${O.windows.valid[1]}. Gray: the range that surprises with no echo produce 95% of the time. One game apart: r = ${lag1.r.toFixed(3)}. The most extreme interval, ${minFam.lag} ${minFam.kind === 'game' ? 'games' : 'days'} apart (r = ${minFam.r.toFixed(3)}, ${num(minFam.pairs)} pairs), has a family-wise p of ${fp(minFam.pFamily)}.</figcaption></figure>
+<p>Surprises do not echo: beating the spread one week says nothing about the next week, or about the game 7, 14 or 28 days later. This is the cleanest test of the lattice idea, because it removes everything the market already prices in. If a calendar rhythm moved results, this is where it would show.</p>
+</section>
+<section class="page"><h2><span class="no">11</span>A machine search for lattices</h2>
+<p>Last, I let the computer look. A grammar of ${Sx.atoms} yes/no facts known before kickoff (home or road, the spread, rest and rest difference, weekday, kickoff time, time zones and body clock, month, week, previous results and covers of both teams, streaks, results exactly 7, 14, 21 and 28 days before, the 10-day gap and 4th-previous pattern, the 28/10 pattern, the last meeting with the opponent, this and last season’s record, the moon) combined into every lattice of one or two facts and, for the most promising pairs, three: ${num(Sx.tried)} lattices, of which ${num(Sx.testable)} made at least ${Sx.minN} picks on ${O.windows.disc[0]}-${O.windows.disc[1]}. Each was scored as a back or a fade, whichever did better.</p>
+<p>The best reached z = ${Sx.lattices[0].discovery.z.toFixed(2)} (${Sx.lattices[0].discovery.hits} of ${Sx.lattices[0].discovery.n} picks). That sounds like p &lt; 0.001, but the same search run on ${num(Sx.nullReps)} histories where every game’s cover was a coin flip finds a best lattice of z = ${Sx.nullMax.mean.toFixed(2)} on average (95% of the time below ${Sx.nullMax.q95.toFixed(2)}). Family-wise p = ${fp(Sx.lattices[0].pFamily)}: the best lattice is exactly as good as the best lattice in noise.</p>
+<figure>${figSearch(O)}<figcaption><b>Figure 11.</b> The ${Sx.lattices.length} best machine-found lattices (duplicates that pick the same games removed): cover rate where they were found against cover rate on the ${O.windows.valid[0]}-${O.windows.valid[1]} seasons. Real lattices would sit near the diagonal; these fall back to about 50%. Together they covered ${pct(Sx.validation.rate)} of ${num(Sx.validation.picks)} later picks; ${Sx.validation.above50} of ${Sx.lattices.length} stayed above 50% and ${Sx.validation.aboveBreakEven} above break-even.</figcaption></figure>
+<p class="tcap"><b>Table 12.</b> The ten best machine-found lattices.</p>
+${table(
+  ['#', 'Lattice', 'Found on 1999-2012', 'Family p', '2013-2025', '2026'],
+  top.map((x) => [String(x.rank), esc(x.text), `${x.discovery.hits}/${x.discovery.n} (${pct(x.discovery.hits / x.discovery.n)})`, fp(x.pFamily), `${rec(x.valid)} (${rate(x.valid)})`, x.fresh.n ? rec(x.fresh) : '–']),
+  { num: [0, 2, 3, 4, 5] },
+)}
+</section>
+<section class="page"><h2><span class="no">12</span>Registered for the rest of 2026</h2>
+<p>A lattice found in old games can only be tested fairly on games that have not been played. So every lattice in this part — the ${O.mechanisms.length} with a reason and the top 3 from the machine search — is now written into <code>ledger.json</code> with today’s date (${esc(S.date)}), next to the two hand-found Seattle rules. <code>node cli.js ledger</code> scores each one only on games after that date. These are the picks for the games that already have a line:</p>
+${openRows.length ? table(['Date', 'Game', 'Pick against the spread (lattices)'], openRows, {}) : '<p class="small">No upcoming game has a line yet.</p>'}
+<p>None of these lattices showed an edge on ${O.windows.disc[0]}-${O.windows.valid[1]}, so the expected result is about 50%, and the picks should not be bet. The ledger is the honest way to find out if that is wrong, but it is slow: to show that a lattice winning 55% of its picks really beats the 52.4% break-even (80% power) takes about ${num(need(0.55, O.breakEven))} picks, and a typical lattice here makes about ${perSeason} picks a season. Showing 55% against a plain coin flip takes about ${num(need(0.55, 0.5))}.</p>
+</section>`;
 }
 
 function seasonText(S) {
@@ -765,11 +1082,14 @@ function seasonText(S) {
 }
 
 function numerologyNote(L) {
-  const long = L.named.filter((x) => x.group === 'long');
-  const withData = long.filter((x) => x.scopes.pooled[MAIN].n > 0);
-  const strongest = [...L.named].sort((a, b) => Math.abs(b.scopes.pooled[MAIN].z || 0) - Math.abs(a.scopes.pooled[MAIN].z || 0))[0];
+  const scored = L.named.filter((x) => Number.isFinite(x.scopes.pooled[MAIN].z));
+  const strongest = [...scored].sort((a, b) => Math.abs(b.scopes.pooled[MAIN].z) - Math.abs(a.scopes.pooled[MAIN].z))[0];
   const sp = strongest.scopes.pooled[MAIN];
-  return `<p>Across the ${L.named.length} named lattices the largest league-wide deviation is “${esc(strongest.label.toLowerCase())}” at z = ${signed(sp.z)} (one-off p = ${fp(sp.p)}); with ${L.named.length} lattices checked, one near p = ${fp(Math.min(1, 1 / L.named.length))} is what luck alone produces. ${withData.length} of the ${long.length} long lags have games exactly that many days apart; long lags that are not whole weeks (1380, 1998, 2160, 2760) pair Sunday games with Monday or Thursday games, so they have few cases.</p>`;
+  const below = scored.filter((x) => x.scopes.pooled[MAIN].p < 0.05).length;
+  const never = L.named.filter((x) => !x.scopes.pooled[MAIN].n).map((x) => x.label.replace('Same result ', '').replace(' apart', '').replace(/ \(.*\)/, ''));
+  const team = TEAM_NAMES[L.team] ?? L.team;
+  return `<p>League-wide, ${below} of the ${scored.length} named lattices with enough cases reach p &lt; 0.05 on their own, against ${n1(0.05 * scored.length)} expected by luck; the largest deviation is \u201c${esc(strongest.label.toLowerCase())}\u201d at z = ${signed(sp.z)}. Some named numbers never occur as an exact gap between two games of the same team: ${never.join(', ')}. Three days would mean playing on a Thursday and again that Sunday, and 161 and 184 days reach from September into the off-season.</p>
+<p class="small">For ${esc(team)}, the 28/10 and 10-day/4th-previous rules show small p-values here because they were found by searching these very games. The Seattle analysis corrects for that search, and it leaves them at p = 0.57 and 0.56.</p>`;
 }
 
 function orderNote(on, mlBy) {

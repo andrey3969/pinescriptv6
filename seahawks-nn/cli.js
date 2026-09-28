@@ -40,7 +40,8 @@ const USAGE = `Seattle Seahawks pattern network (works for any team code)
                          three-lookback rules, game-order rules, streaks, phases, cycles,
                          compressibility), two null models, split-half, season cycles and a
                          machine-learning suite -> results/lab.json + results/lattice-lab.pdf
-                         (~7 min; --quick ~2 min; --reps 1000 --placebo-reps 300 --ml-null 20)
+                         (~12 min; --quick ~3 min; --reps 1000 --placebo-reps 300 --ml-null 20
+                         --power-runs 5 --own-null 1000; --parts own,power reruns only those)
   node cli.js lab-pdf    rebuild results/lattice-lab.pdf from results/lab.json
 
 options: --team SEA  --from 1999  --to 2025  --test-from 2004  --seeds 5
@@ -189,6 +190,13 @@ function crossteam() {
 function ledger() {
   const games = loadGames();
   for (const r of scoreLedger(games, loadLedger())) {
+    if (r.type === 'pick') {
+      const open = r.picks.filter((p) => p.cover === null);
+      console.log(`${r.id} (all teams, against the spread, written down ${r.registered}): ${r.description}`);
+      console.log(`  forward record ${r.hits}/${r.n} covers${r.picks.length ? '' : ', no eligible games yet'}`);
+      for (const p of open) console.log(`  ${p.date} ${p.game}: take ${p.pick} ${p.spread > 0 ? '-' : '+'}${Math.abs(p.spread)} vs ${p.opp}`);
+      continue;
+    }
     console.log(`${r.id} (${r.team}, written down ${r.registered}): ${describeRule(r)}`);
     console.log(`  forward record ${r.hits}/${r.n}${r.calls.length ? '' : ', no eligible games yet'}`);
     for (const c of r.calls) console.log(`  ${c.game.date} ${where(c.game)}: ${c.status}`);
@@ -289,13 +297,23 @@ function query() {
 }
 
 async function lab() {
-  const { runLab } = await import('./src/lab/run.js');
+  const { LAB_PARTS, runLab } = await import('./src/lab/run.js');
   const outDir = args.out ?? join(HERE, 'results');
   mkdirSync(outDir, { recursive: true });
+  // --parts own,power recomputes just those parts and keeps the rest of lab.json
+  const parts = args.parts ? String(args.parts).split(',') : LAB_PARTS;
+  const bad = parts.filter((p) => !LAB_PARTS.includes(p));
+  if (bad.length) throw new Error(`unknown part(s) ${bad.join(', ')}; choose from ${LAB_PARTS.join(', ')}`);
+  const labFile = join(outDir, 'lab.json');
+  const previous = parts.length < LAB_PARTS.length ? JSON.parse(readFileSync(labFile, 'utf8')) : null;
   const L = await runLab(loadGames(), {
+    parts,
+    previous,
     reps: int(args.reps, args.quick ? 200 : 1000),
     placeboReps: int(args['placebo-reps'], args.quick ? 0 : 300),
     mlNullReps: int(args['ml-null'], args.quick ? 5 : 20),
+    powerRuns: int(args['power-runs'], args.quick ? 0 : 5),
+    ownNullReps: int(args['own-null'], args.quick ? 100 : 1000),
     seasonPerms: args.quick ? 2000 : 10000,
     seasonMarket: args.quick ? 200 : 1000,
     workers: opts.workers,
@@ -303,8 +321,8 @@ async function lab() {
     quick: Boolean(args.quick),
     log: (msg) => console.error(msg),
   });
-  writeFileSync(join(outDir, 'lab.json'), JSON.stringify(L, null, 1) + '\n');
-  console.error(`lab done in ${L.seconds}s -> ${join(outDir, 'lab.json')}`);
+  writeFileSync(labFile, JSON.stringify(L, null, 1) + '\n');
+  console.error(`lab done (${parts.join(', ')}) -> ${labFile}`);
   if (!args['no-pdf']) await labPdf();
 }
 

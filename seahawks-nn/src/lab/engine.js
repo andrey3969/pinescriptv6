@@ -56,7 +56,45 @@ export function prepare(games, opts = {}) {
       describe: (id) => def.describe(rawIds ? rawIds[id] : id),
     };
   });
-  return { o, teams, schedules, market, bounds, fams, T: teams.length };
+  const ctx = { o, teams, schedules, market, bounds, fams, T: teams.length };
+  if (o.plant) plantLattice(ctx, o.plant);
+  return ctx;
+}
+
+// Power check: replace the real results with a null history in which a
+// lattice of known strength has been planted, so the engine can be asked
+// whether it finds it. With probability q, a game that meets the rule's
+// condition is set to follow the rule (ties are left alone).
+//   { rule: { type: 'lag', d } }                 same result as the game d days back
+//   { rule: { type: 'order', gap, k } }          gap-day game, last and k-th previous agree
+//   { rule: { type: 'calendar', d1, d2 } }       games d1 and d2 days back agree
+export function plantLattice(ctx, { rule, q, teams = null, baseKind = 'spread', baseRep = 8_000_000, seed = 1 }) {
+  const res = nullGenerators(ctx)[baseKind](baseRep);
+  const rand = mulberry32(hashSeed('plant', seed));
+  const [from, to] = ctx.bounds.full;
+  const decided = (r) => r === 1 || r === -1;
+  ctx.schedules.forEach((seq, t) => {
+    const r = res[t];
+    if (!teams || teams.includes(ctx.teams[t])) {
+      const byDay = new Map(seq.map((g, i) => [g.day, i]));
+      for (let j = 0; j < seq.length; j++) {
+        if (seq[j].season < from || seq[j].season > to || !decided(r[j])) continue;
+        let target = null;
+        if (rule.type === 'lag') {
+          const i = byDay.get(seq[j].day - rule.d);
+          if (i !== undefined && decided(r[i])) target = r[i];
+        } else if (rule.type === 'order') {
+          if (j >= rule.k && seq[j].day - seq[j - 1].day === rule.gap && decided(r[j - 1]) && r[j - 1] === r[j - rule.k]) target = r[j - 1];
+        } else if (rule.type === 'calendar') {
+          const a = byDay.get(seq[j].day - rule.d1);
+          const b = byDay.get(seq[j].day - rule.d2);
+          if (a !== undefined && b !== undefined && decided(r[a]) && r[a] === r[b]) target = r[a];
+        }
+        if (target !== null && rand() < q) r[j] = target;
+      }
+    }
+    seq.forEach((g, i) => (g.result = r[i]));
+  });
 }
 
 // Result histories: the real one, and null replicate `rep` of each kind.
