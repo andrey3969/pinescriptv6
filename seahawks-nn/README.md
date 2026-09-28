@@ -26,6 +26,7 @@ node cli.js query --gap 10 --position 4      # every game 10 days after the last
 node cli.js query --gap 10 --position 4 --same-season   # same, all games in one season
 node cli.js query --lag 14 --consecutive     # repeats/reversals, back-to-back games 14 days apart
 node cli.js query --lag 14 --from 2003 --to 2025   # same for all pairs, any era
+node cli.js query --equal-gap 6 --count 3 [--all-teams]   # "6 x 3 = 18": three 6-day gaps in a row
 npm test                # unit tests (leakage, network, statistics, data)
 npm run update-data     # refresh data/games.csv from nflverse on GitHub
 npm run update-data -- ../nfldata/data/games.csv   # ...or from a local clone of nflverse/nfldata

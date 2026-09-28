@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { toCsv } from './src/csv.js';
-import { isDecided, loadGames, resultChar, teamSchedule } from './src/data.js';
+import { allTeams, isDecided, loadGames, resultChar, teamSchedule } from './src/data.js';
 import { loadLedger, scoreLedger } from './src/ledger.js';
 import { ALL_MODEL_KEYS, MODELS, walkForward } from './src/models.js';
 import { buildPdf } from './src/pdf.js';
@@ -11,7 +11,9 @@ import { DEFAULTS, runAll } from './src/pipeline.js';
 import { predictNext, upcomingRuleCalls } from './src/predict.js';
 import { renderReport } from './src/report.js';
 import { RULES, describeRule, ordinal, ruleCases } from './src/rules.js';
+import { hashSeed, mulberry32, shuffleWithinSeason } from './src/rng.js';
 import { intervalScan, windowRows } from './src/scan.js';
+import { empiricalP } from './src/stats.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -29,6 +31,8 @@ const USAGE = `Seattle Seahawks pattern network (works for any team code)
                                           every game 10 days after the last one, compared
                                           with the 4th-previous game
   node cli.js query --lag 14 [--consecutive]   repeats/reversals for games 14 days apart
+  node cli.js query --equal-gap 6 --count 3 [--all-teams]
+                                          stretches of three 6-day gaps (6 x 3 = 18 days)
 
 options: --team SEA  --from 1999  --to 2025  --test-from 2004  --seeds 5
          --perms 200  --scan-perms 2000  --team-perms 1000  --workers N  --quick`;
@@ -167,7 +171,52 @@ function listCases(rule) {
   console.log(`\n${describeRule(rule)}: ${cases.length} sequences, rule fired ${fired.length} times, ${fired.filter((c) => c.hit).length} repeats`);
 }
 
+// Stretches of `count` back-to-back gaps all `g` days long (6 x 3 = 18: four
+// games, three 6-day gaps), past and scheduled; does the last game repeat the first?
+function equalGaps(g, count) {
+  const games = loadGames();
+  const teams = args['all-teams'] ? allTeams(games) : [opts.team];
+  const stretches = (seq) =>
+    seq.flatMap((_, j) => {
+      if (j < count) return [];
+      for (let t = 0; t < count; t++) if (seq[j - t].day - seq[j - t - 1].day !== g) return [];
+      return [j];
+    });
+  for (const team of teams) {
+    const seq = teamSchedule(games, team);
+    for (const j of stretches(seq)) {
+      if (seq[j].season < opts.from) continue;
+      const line = Array.from({ length: count + 1 }, (_, t) => seq[j - count + t])
+        .map((x) => `${x.date} ${x.weekday} ${resultChar(x.result)}`)
+        .join(' -> ');
+      console.log(`${team.padEnd(4)} ${line}`);
+    }
+  }
+  if (args['all-teams']) return;
+  const seq = teamSchedule(games, opts.team);
+  const base = seq.map((x) => x.result);
+  const ends = stretches(seq).filter((j) => seq[j].season <= opts.to && seq[j].season >= opts.from);
+  const stat = (res) => {
+    const used = ends.filter((j) => isDecided(res[j - count]) && isDecided(res[j]));
+    return { n: used.length, same: used.filter((j) => res[j] === res[j - count]).length };
+  };
+  const real = stat(base);
+  if (!real.n) return console.log(`\nno finished ${g} x ${count} = ${g * count}-day stretches for ${opts.team} in ${opts.from}-${opts.to}: nothing to test`);
+  const nulls = Array.from({ length: opts.scanPerms }, (_, k) => {
+    const s = stat(shuffleWithinSeason(seq, base, mulberry32(hashSeed('equal', g, count, k))));
+    return s.n ? s.same / s.n : NaN;
+  }).filter((x) => !Number.isNaN(x));
+  const center = nulls.reduce((a, b) => a + b, 0) / nulls.length;
+  const rate = real.same / real.n;
+  const p = empiricalP(nulls, (x) => Math.abs(x - center) >= Math.abs(rate - center) - 1e-12);
+  console.log(
+    `\n${opts.team} ${opts.from}-${opts.to}, ${g} x ${count} = ${g * count} days: last game repeated the first in ${real.same}/${real.n} ` +
+      `(${pct(rate)}); shuffled seasons ${pct(center)}, p = ${p.toFixed(2)}`,
+  );
+}
+
 function query() {
+  if (args['equal-gap']) return equalGaps(int(args['equal-gap']), int(args.count, 3));
   if (args.gap) {
     const k = int(args.position, 4);
     return listCases({ type: 'order', gap: int(args.gap), k, sameSeason: Boolean(args['same-season']) });
