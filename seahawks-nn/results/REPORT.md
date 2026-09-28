@@ -9,10 +9,11 @@ SEA went 269–199–1 (57.5% wins) over 469 games in 1999–2025, playoffs incl
 - **The neural network did not beat the simplest baseline.** It saw only SEA's own results and the calendar spacing of its games, and was tested season by season on games it had never seen (2004–2025, 386 games). It picked **52.3%** correctly, against **59.1%** for picking SEA every week and **69.2%** for the Vegas favorite (the gap to picking SEA every week is significant, the wrong way: McNemar p = 0.03).
 - **Shuffle test.** On 200 copies of history with each season's results dealt out in random order, the same network scored 53.5% on average (90% of runs between 50.2% and 56.5%); on the real order it scored 52.8% (p = 0.63 for accuracy, 0.08 for log-loss). Neither is significant: the real order is not detectably more predictable than a random reshuffle of the same seasons.
 - **The 28/10 rule really is 8-for-8 in 1999–2025, matching your count, but a search produces results like that.** 116 different "if the games d1 and d2 days back agree, repeat it" rules have at least 8 cases here. In 57% of shuffled histories at least one of them looks this good (p after the search = 0.57). Across the other 31 teams the same rule is right 118 of 198 times (60%); shuffling those teams' seasons gives 57%. It beats 50% only because good seasons stay good.
+- **The 10-day, 4th-previous rule is 9-for-10 here as written, not perfect.** The miss: 2014-09-14 @ LAC (L 21–30), called a win from the 2014-01-11 playoff game and the 2014-09-04 Thu game; that 4th-previous game was in the 2013 season. It is 9/9 only if all the games must be in one season, which the rule doesn't say. Underneath every 10-day rule is one fact: after a 10-day gap SEA repeated its last result 11 of 14 times (shuffled seasons: 55%, p = 0.10), and the extra conditions only filter out the exceptions. Counting all 202 calendar and game-order rules with 8+ cases, a record as strong as the same-season version turns up in 56% of shuffled histories. For the other 31 teams the rule is right 60% of the time (173/289); shuffles give 57%. Details in section 4.
 - **No interval between games shows a real repeat-or-reverse pattern** once you allow for how many were checked (lowest false-discovery q = 0.41 across 87 intervals of 1–400 days, and 0.34 for back-to-back games).
-- **3, 4, 7, 10, 11 and 14 are the NFL weekday grid.** A 4-day gap is Sunday→Thursday, 10 days is Thursday→Sunday, 8 + 6 is Sunday→Monday→Sunday, 14 is a bye week. Details in section 5.
+- **3, 4, 7, 10, 11 and 14 are the NFL weekday grid.** A 4-day gap is Sunday→Thursday, 10 days is Thursday→Sunday, 8 + 6 is Sunday→Monday→Sunday, 14 is a bye week. Details in section 6.
 - **Every team has "its own" best rule, because every noisy sequence does.** 26 of the other 31 teams have a rule that looks at least as strong as SEA's 28/10 by the same measure, spread over 24 different interval pairs, and 11 of them have at least one perfect rule (every case repeated, or every case reversed) with 8+ cases. After correcting for the search, 2 of 32 teams' best rules pass at the 5% level, where chance alone gives about 1.6 (PHI 35 & 21 days, 56/74; SF 42 & 28 days, 62/83).
-- **Live test, 2026-10-25 Sun vs KC:** 28 days before is 2026-09-27 @ WAS (L); 10 days before is 2026-10-15 Thu @ DEN (not played). If the Thu 2026-10-15 game @ DEN is also a loss, the rule calls a loss; otherwise no call. A rule only gets a fair test on games played after it was written down.
+- **Live test, 2026-10-25 Sun vs KC:** the 28/10-day rule and the 10-day gap, 4th-previous rule compare the same two games: 2026-09-27 Sun @ WAS (L) and 2026-10-15 Thu @ DEN (not played). If the Thu 2026-10-15 game @ DEN is also a loss, both rules call a loss; otherwise no call. So this is one shared test, not two. The rules are registered in `ledger.json`, which scores them only on games played after they were written down (section 8).
 
 ## 1. Out-of-sample test (walk-forward)
 
@@ -30,9 +31,10 @@ For every season from 2004 to 2025, each model was trained on 1999 through the s
 | Neural net: last 8 results, no dates | 386 | 55.2% | 50%–60% | 0.692 |
 | Neural net: results + timing | 386 | 52.3% | 47%–57% | 0.695 |
 | Repeat the previous result | 386 | 48.7% | 44%–54% | 0.698 |
-| 28/10-day agreement rule * | 8 | 100.0% | 68%–100% | – |
+| 28/10-day rule * | 8 | 100.0% | 68%–100% | – |
+| 10-day gap, 4th-previous rule * | 10 | 90.0% | 60%–98% | – |
 
-\* The rule only makes a call on 8 of these games, and it was found by looking at these same seasons, so its row is not out-of-sample. Section 3 corrects it for the search.
+\* The rules only make a call on 8 and 10 of these games, and they were found by looking at these same seasons, so their rows are not out-of-sample. Sections 3 and 4 correct them for the search.
 
 Head to head, the results + timing network and always picking SEA disagreed on 130 games: the network was right on 52 of them and always-SEA on 78 (McNemar p = 0.03). The everything network against the Vegas line: 39 vs 73 (p = 0.002). Adding the results + timing inputs to the spread + home + form network made it worse (65.3% → 60.4%, log-loss 0.610 → 0.665).
 
@@ -78,7 +80,7 @@ Every SEA game in 1999–2025 with a game exactly 28 and 10 days earlier. The en
 
 Every "10 days before" game is a Thursday, so the rule really says "after a Thursday game, compare with four weeks earlier". SEA played 21 Thursday games in 1999–2025, the first on 2006-12-14, so the rule gets about one chance a season at most. On its own, 8/8 would be rare (binomial p = 0.008; shuffle p = 0.004). But it is one of 116 rules with at least 8 cases. The real history has 3 rules this strong; shuffled histories average 1.0, and 10% of them have 3 or more. Requiring at least 8 cases is the cutoff most favorable to 28/10; a broader search makes the correction bigger.
 
-| Strongest rules found | Cases | Repeated | Rate | p alone | p after search |
+| Strongest calendar rules | Cases | Repeated | Rate | p alone | p after search |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | 49 & 28 days | 67 | 45 | 67% | 0.007 | 0.43 |
 | 28 & 10 days | 8 | 8 | 100% | 0.008 | 0.57 |
@@ -89,7 +91,57 @@ Every "10 days before" game is a Thursday, so the rule really says "after a Thur
 | 39 & 18 days | 9 | 8 | 89% | 0.04 | 0.96 |
 | 62 & 27 days | 11 | 9 | 82% | 0.07 | 0.99 |
 
-## 4. Repeats and reversals by interval
+## 4. The 10-day, 4th-previous rule
+
+Rule: if a game comes exactly 10 days after the previous one, and the previous and 4th-previous results agree, predict that result. Every 10-day gap here is Thursday→Sunday, so the 4th-previous game is usually the one 28 days back, the same game the 28/10 rule uses. They differ when a Monday game or a bye moves the calendar (the "span" column).
+
+| Game | 4th-previous | Previous | Span | Result | Rule |
+| --- | --- | --- | ---: | --- | --- |
+| 2006-12-24 vs LAC | 2006-11-27 W | 2006-12-14 Thu L | 27 days | L | no call |
+| 2008-12-07 vs NE | 2008-11-09 L | 2008-11-27 Thu L | 28 days | L | hit |
+| 2012-10-28 @ DET | 2012-09-30 L | 2012-10-18 Thu L | 28 days | L | hit |
+| 2014-09-14 @ LAC | 2014-01-11 (playoffs) W | 2014-09-04 Thu W | 246 days | L | miss |
+| 2014-12-07 @ PHI | 2014-11-09 W | 2014-11-27 Thu W | 28 days | W | hit |
+| 2015-11-01 @ DAL | 2015-10-05 W | 2015-10-22 Thu W | 27 days | W | hit |
+| 2018-11-25 @ CAR | 2018-10-28 W | 2018-11-15 Thu W | 28 days | W | hit |
+| 2019-10-13 @ CLE | 2019-09-15 W | 2019-10-03 Thu W | 28 days | W | hit |
+| 2021-10-17 @ PIT | 2021-09-19 L | 2021-10-07 Thu L | 28 days | L | hit |
+| 2023-12-10 @ SF | 2023-11-12 W | 2023-11-30 Thu L | 28 days | L | no call |
+| 2024-10-20 @ ATL | 2024-09-22 W | 2024-10-10 Thu L | 28 days | W | no call |
+| 2025-01-05 @ LA | 2024-12-08 W | 2024-12-26 Thu W | 28 days | W | hit |
+| 2025-10-05 vs TB | 2025-09-07 L | 2025-09-25 Thu W | 28 days | L | no call |
+| 2025-12-28 @ CAR | 2025-11-30 W | 2025-12-18 Thu W | 28 days | W | hit |
+
+As written: 9/10. Requiring every game to be in the same season: 9/9. Which earlier game gets compared with the last one is another choice; after 10-day gaps:
+
+| Earlier game compared with the last | As written | Same season only |
+| --- | ---: | ---: |
+| 2nd-previous | 6/9 | 6/8 |
+| 3rd-previous | 4/7 | 4/6 |
+| 4th-previous | 9/10 | 9/9 |
+| 5th-previous | 9/11 | 9/9 |
+| 6th-previous | 3/4 | 2/2 |
+| 7th-previous | 6/7 | 5/5 |
+| 8th-previous | 7/8 | 5/5 |
+
+All of these are subsets of the same 14 games: after a 10-day gap, SEA repeated its last result 11 times (79%; shuffled seasons give 55%, p = 0.10). Each version keeps a different subset, and the perfect ones are the subsets that happen to drop the 3 exceptions. That is how a 79% fact becomes a 100% rule.
+
+**Correcting for the search.** 86 game-order rules have 8+ cases (every gap up to 21 days or any gap, positions 2–8, any season or same season); with the 116 calendar rules that is 202. For the same-season version: p = 0.004 alone, < 0.001 against shuffles, 0.39 after the game-order search, and 0.56 after both searches. As written: 0.02, 0.01, 0.78 and 0.95. Both rules were shaped while looking at these same results, so even the corrected numbers flatter them.
+
+| Strongest game-order rules | Cases | Repeated | Rate | p alone | p after both searches |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 10-day gap, 4th-previous, same season | 9 | 9 | 100% | 0.004 | 0.56 |
+| 10-day gap, 5th-previous, same season | 9 | 9 | 100% | 0.004 | 0.56 |
+| 10-day gap, 4th-previous | 10 | 9 | 90% | 0.02 | 0.95 |
+| 6-day gap, 2nd-previous | 23 | 6 | 26% | 0.03 | 0.98 |
+| 8-day gap, 8th-previous, same season | 9 | 8 | 89% | 0.04 | 0.99 |
+| 14-day gap, 5th-previous | 20 | 5 | 25% | 0.04 | 0.99 |
+| 6-day gap, 2nd-previous, same season | 22 | 6 | 27% | 0.05 | 0.99 |
+| 8-day gap, 8th-previous | 14 | 11 | 79% | 0.06 | 1.00 |
+
+**Other teams.** The same rule for the other 31 teams: 173/289 (60%) as written, 145/241 (60%) same-season only; their shuffled seasons give 57% and 57%. The network in section 1 had the inputs to represent this rule (the last 8 results in order and the gap before each game); with 10 cases in 27 seasons it cannot be told apart from the other patterns noise produces.
+
+## 5. Repeats and reversals by interval
 
 Back-to-back games grouped by the days between them. "Same" means the second game repeated the first result. The shuffled column is what reshuffled seasons produce for that gap.
 
@@ -116,7 +168,7 @@ Every pair of games 400 or fewer days apart (not only back-to-back), the most ex
 | 18 days | 20 | 15 | 75% | 54% | 0.07 | 0.83 |
 | 266 days | 73 | 46 | 63% | 53% | 0.08 | 0.83 |
 
-## 5. Where 3, 4, 7, 10, 11 and 14 come from
+## 6. Where 3, 4, 7, 10, 11 and 14 come from
 
 Nearly every NFL game is on a Sunday, Monday, Thursday or Saturday, so the gap between two games is a week plus or minus a weekday shift. SEA's back-to-back gaps, 1999–2025:
 
@@ -134,50 +186,50 @@ Nearly every NFL game is on a Sunday, Monday, Thursday or Saturday, so the gap b
 | 14 days | 27 | Sun→Sun (26), Sat→Sat (1) |
 | 15 days | 3 | Sun→Mon (3) |
 
-So 14 = 7 + 7 = 8 + 6 = 4 + 10 = 3 + 11 are the same two-week span with the middle game moved to a Monday or Thursday, and 21/7 is three weeks.
+So 14 = 7 + 7 = 8 + 6 = 4 + 10 is the same two-week span with the middle game moved to a Monday or Thursday, 27 = 6 + 7 + 4 + 10 is four weeks with a Monday game at the start, and 21/7 is three weeks.
 
-## 6. All 32 teams
+## 7. All 32 teams
 
-The same search for every franchise, 1999–2025. "Best rule" is the strongest two-lookback rule found for that team (at least 8 cases); "after search" corrects for all the rules tried (1000 shuffles each). The last column is the results-and-timing network (walk-forward) against always predicting the team's more common result.
+The same search for every franchise, 1999–2025. "Best calendar rule" is the strongest two-lookback rule found for that team (at least 8 cases); "after search" corrects for all the rules tried (1000 shuffles each). The last column is the results-and-timing network (walk-forward) against always predicting the team's more common result.
 
-| Team | 28/10 rule | Best rule | Repeated | p after search | Network vs base rate |
-| --- | ---: | --- | ---: | ---: | ---: |
-| NE | 6/6 | 35 & 21 days | 75/99 | 0.44 | 69.0% vs 68.5% |
-| CLE | 4/6 | 35 & 14 days | 82/111 | 0.28 | 64.9% vs 66.3% |
-| SF | 4/6 | 42 & 28 days | 62/83 | 0.02 | 56.3% vs 50.8% |
-| JAX | 6/7 | 28 & 14 days | 81/114 | 0.15 | 60.4% vs 57.9% |
-| PHI | 4/6 | 35 & 21 days | 56/74 | 0.01 | 57.1% vs 58.1% |
-| TEN | 6/10 | 56 & 28 days | 60/84 | 0.22 | 53.8% vs 44.3% |
-| DET | 11/16 | 35 & 7 days | 62/88 | 0.80 | 61.6% vs 58.6% |
-| CAR | 3/5 | 42 & 14 days | 72/105 | 0.41 | 53.3% vs 47.8% |
-| KC | 3/6 | 28 & 7 days | 70/102 | 0.61 | 62.9% vs 54.5% |
-| LAC | 4/5 | 28 & 7 days | 71/104 | 0.15 | 53.0% vs 43.0% |
-| NYG | 2/5 | 35 & 7 days | 53/74 | 0.09 | 52.4% vs 53.2% |
-| HOU | 4/6 | 28 & 21 days | 59/84 | 0.20 | 51.6% vs 53.8% |
-| IND | 4/6 | 28 & 14 days | 74/111 | 0.44 | 59.3% vs 57.9% |
-| LA | 3/4 | 28 & 7 days | 74/111 | 0.97 | 50.3% vs 43.6% |
-| LV | 3/4 | 49 & 14 days | 54/78 | 0.56 | 57.1% vs 60.7% |
-| CIN | 1/4 | 63 & 7 days | 51/73 | 0.29 | 52.2% vs 50.8% |
-| DEN | 5/9 | 49 & 21 days | 48/69 | 0.23 | 53.9% vs 53.9% |
-| NYJ | 5/6 | 62 & 56 days | 0/10 | 0.27 | 54.9% vs 53.3% |
-| ARI | 2/4 | 28 & 21 days | 71/109 | 0.50 | 54.2% vs 55.9% |
-| MIN | 4/8 | 48 & 42 days | 9/9 | 0.21 | 53.5% vs 48.9% |
-| BUF | 0/1 | 35 & 21 days | 63/97 | 0.15 | 51.3% vs 48.1% |
-| GB | 6/8 | 63 & 49 days | 39/56 | 0.59 | 59.2% vs 60.2% |
-| CHI | 4/8 | 49 & 35 days | 49/73 | 0.53 | 49.0% vs 51.5% |
-| **SEA** | 8/8 | 49 & 28 days | 45/67 | 0.41 | 52.8% vs 59.1% |
-| PIT | 4/8 | 56 & 14 days | 39/57 | 0.69 | 60.9% vs 63.0% |
-| ATL | 2/6 | 60 & 4 days | 8/8 | 0.37 | 50.7% vs 45.5% |
-| NO | 2/6 | 50 & 22 days | 8/8 | 0.63 | 51.3% vs 52.4% |
-| TB | 3/4 | 42 & 7 days | 48/73 | 0.84 | 51.8% vs 49.9% |
-| BAL | 3/5 | 49 & 35 days | 51/79 | 0.75 | 55.0% vs 59.2% |
-| DAL | 6/13 | 53 & 4 days | 12/14 | 0.61 | 51.8% vs 46.1% |
-| WAS | 3/4 | 41 & 14 days | 10/12 | 0.88 | 54.4% vs 58.8% |
-| MIA | 1/6 | 48 & 7 days | 8/9 | 0.81 | 48.2% vs 47.9% |
+| Team | 28/10 | 10-day, 4th prev. | Best calendar rule | p after search | Network vs base rate |
+| --- | ---: | ---: | --- | ---: | ---: |
+| NE | 6/6 | 11/12 | 35 & 21 days: 75/99 | 0.44 | 69.0% vs 68.5% |
+| CLE | 4/6 | 4/7 | 35 & 14 days: 82/111 | 0.28 | 64.9% vs 66.3% |
+| SF | 4/6 | 5/7 | 42 & 28 days: 62/83 | 0.02 | 56.3% vs 50.8% |
+| JAX | 6/7 | 6/8 | 28 & 14 days: 81/114 | 0.15 | 60.4% vs 57.9% |
+| PHI | 4/6 | 9/13 | 35 & 21 days: 56/74 | 0.01 | 57.1% vs 58.1% |
+| TEN | 6/10 | 6/12 | 56 & 28 days: 60/84 | 0.22 | 53.8% vs 44.3% |
+| DET | 11/16 | 11/18 | 35 & 7 days: 62/88 | 0.80 | 61.6% vs 58.6% |
+| CAR | 3/5 | 5/8 | 42 & 14 days: 72/105 | 0.41 | 53.3% vs 47.8% |
+| KC | 3/6 | 9/13 | 28 & 7 days: 70/102 | 0.61 | 62.9% vs 54.5% |
+| LAC | 4/5 | 5/6 | 28 & 7 days: 71/104 | 0.15 | 53.0% vs 43.0% |
+| NYG | 2/5 | 4/8 | 35 & 7 days: 53/74 | 0.09 | 52.4% vs 53.2% |
+| HOU | 4/6 | 6/10 | 28 & 21 days: 59/84 | 0.20 | 51.6% vs 53.8% |
+| IND | 4/6 | 7/10 | 28 & 14 days: 74/111 | 0.44 | 59.3% vs 57.9% |
+| LA | 3/4 | 4/6 | 28 & 7 days: 74/111 | 0.97 | 50.3% vs 43.6% |
+| LV | 3/4 | 4/7 | 49 & 14 days: 54/78 | 0.56 | 57.1% vs 60.7% |
+| CIN | 1/4 | 4/8 | 63 & 7 days: 51/73 | 0.29 | 52.2% vs 50.8% |
+| DEN | 5/9 | 8/13 | 49 & 21 days: 48/69 | 0.23 | 53.9% vs 53.9% |
+| NYJ | 5/6 | 8/13 | 62 & 56 days: 0/10 | 0.27 | 54.9% vs 53.3% |
+| ARI | 2/4 | 1/3 | 28 & 21 days: 71/109 | 0.50 | 54.2% vs 55.9% |
+| MIN | 4/8 | 5/10 | 48 & 42 days: 9/9 | 0.21 | 53.5% vs 48.9% |
+| BUF | 0/1 | 1/2 | 35 & 21 days: 63/97 | 0.15 | 51.3% vs 48.1% |
+| GB | 6/8 | 7/12 | 63 & 49 days: 39/56 | 0.59 | 59.2% vs 60.2% |
+| CHI | 4/8 | 3/9 | 49 & 35 days: 49/73 | 0.53 | 49.0% vs 51.5% |
+| **SEA** | 8/8 | 9/10 | 49 & 28 days: 45/67 | 0.41 | 52.8% vs 59.1% |
+| PIT | 4/8 | 9/13 | 56 & 14 days: 39/57 | 0.69 | 60.9% vs 63.0% |
+| ATL | 2/6 | 2/6 | 60 & 4 days: 8/8 | 0.37 | 50.7% vs 45.5% |
+| NO | 2/6 | 3/8 | 50 & 22 days: 8/8 | 0.63 | 51.3% vs 52.4% |
+| TB | 3/4 | 5/7 | 42 & 7 days: 48/73 | 0.84 | 51.8% vs 49.9% |
+| BAL | 3/5 | 7/10 | 49 & 35 days: 51/79 | 0.75 | 55.0% vs 59.2% |
+| DAL | 6/13 | 8/15 | 53 & 4 days: 12/14 | 0.61 | 51.8% vs 46.1% |
+| WAS | 3/4 | 3/6 | 41 & 14 days: 10/12 | 0.88 | 54.4% vs 58.8% |
+| MIA | 1/6 | 3/9 | 48 & 7 days: 8/9 | 0.81 | 48.2% vs 47.9% |
 
 The results-and-timing network beat its team's base rate on accuracy for 18 of 32 teams and on log-loss for 9 of 32 (averaged over teams: 55.3% vs 53.9%). If each team had its own hidden lattice, a network trained on that team alone should find it and beat the base rate consistently. It does the opposite: its probabilities are worse than the base rate for most teams (sign test p = 0.02), which is what fitting noise looks like.
 
-## 7. Next game
+## 8. Next game and the forward ledger
 
 **2026-10-04 Sun vs LAC** (SEA favored by 6.5). Models retrained on all 471 finished games through 2026-09-27.
 
@@ -192,10 +244,15 @@ The results-and-timing network beat its team's base rate on accuracy for 18 of 3
 
 Only the models that use the point spread beat the base rate out of sample (section 1). Treat the results-and-timing numbers as noise.
 
+**Ledger.** `ledger.json` lists rules with the date they were written down; `node cli.js ledger` scores each one only on games played after that date. A rule found by searching old results can only be tested fairly this way.
+
+- **28-10** (written down 2026-09-28): If Seattle's results 28 and 10 days before a game agree, predict that result again. Forward record: 0/0. 2026-10-25 Sun vs KC: If the Thu 2026-10-15 game @ DEN is also a loss, the rule calls a loss; otherwise no call.
+- **gap10-4th** (written down 2026-09-28): If Seattle's game is exactly 10 days after its previous game, and the previous and fourth-previous results agree, predict that result again. Forward record: 0/0. 2026-10-25 Sun vs KC: If the Thu 2026-10-15 game @ DEN is also a loss, the rule calls a loss; otherwise no call.
+
 ## Method
 
-- **Data:** nflverse `games.csv` (Lee Sharpe), every NFL game since 1999 with dates, scores and closing spreads. Ties count as neither result.
+- **Data:** nflverse `games.csv` (Lee Sharpe), every NFL game since 1999 with dates, scores and closing spreads. Ties count as neither result. Relocated franchises use their current codes (SD→LAC, STL→LA, OAK→LV).
 - **Network:** 84 inputs for the results + timing model: the last 8 results in game order, the last 4 day gaps, the result exactly d days earlier for every d from 1 to 63 (0 if no game), and the weekday. The full model adds home/away, playoff, week, division game, season-to-date record, last season's record, point differential and the spread (93 inputs). One hidden layer of 16 tanh units, sigmoid output, Adam (lr 0.01), L2 0.01, early stopping on a random 20% of the training games, ensemble of 5 seeds. Logistic regression is the same network with no hidden layer.
 - **Validation:** expanding-window walk-forward by season; train 1999..Y-1, test Y, for Y = 2004..2025. Hyperparameters were fixed before any test season was scored.
-- **Null model:** within-season shuffles keep schedules and season records and destroy only the order of results. Interval scan: 2000 shuffles; rules use lookbacks up to 63 days with at least 8 cases; "after search" p-values compare each rule with the best rule of every shuffled history (min-p family-wise correction); interval tables use Benjamini–Hochberg q-values.
+- **Null model:** within-season shuffles keep schedules and season records and destroy only the order of results. Rule scans: 2000 shuffles; calendar rules use lookbacks up to 63 days, game-order rules gaps up to 21 days and positions up to 8; rules need at least 8 cases. "After search" p-values compare a rule with the best rule of every shuffled history (min-p family-wise correction); interval tables use Benjamini–Hochberg q-values.
 - **Files:** `results/results.json` has every number in this report; `results/predictions.csv` has every walk-forward prediction.

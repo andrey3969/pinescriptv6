@@ -1,6 +1,7 @@
 import { isDecided } from './data.js';
-import { buildMatrix, scheduleIndex } from './features.js';
+import { buildMatrix } from './features.js';
 import { trainEnsemble, trainNet } from './nn.js';
+import { RULES, ruleCall, ruleInputs } from './rules.js';
 import { wilson } from './stats.js';
 
 export const MODELS = {
@@ -9,7 +10,8 @@ export const MODELS = {
   repeat_last: { label: 'Repeat the previous result', kind: 'baseline' },
   season_form: { label: 'Season-to-date record', kind: 'baseline' },
   vegas: { label: 'Vegas point spread', kind: 'baseline' },
-  rule_28_10: { label: '28/10-day agreement rule', kind: 'rule' },
+  rule_28_10: { label: RULES.rule_28_10.label, kind: 'rule' },
+  rule_gap10_k4: { label: RULES.rule_gap10_k4.label, kind: 'rule' },
   lr_lattice: { label: 'Logistic regression: results + timing', kind: 'model', set: 'lattice', hidden: 0 },
   nn_lattice: { label: 'Neural net: results + timing', kind: 'model', set: 'lattice' },
   nn_sequence: { label: 'Neural net: last 8 results, no dates', kind: 'model', set: 'sequence' },
@@ -18,16 +20,6 @@ export const MODELS = {
 };
 
 export const ALL_MODEL_KEYS = Object.keys(MODELS);
-
-// "If the results d1 and d2 days before a game agree, predict that result."
-// Returns 1 / -1, or null when the rule makes no call.
-export function lookbackRule(seq, results, i, d1 = 28, d2 = 10) {
-  const prev = scheduleIndex(seq).calPrev[i];
-  const a = prev[d1];
-  const b = prev[d2];
-  if (a < 0 || b < 0) return null;
-  return isDecided(results[a]) && results[a] === results[b] ? results[a] : null;
-}
 
 export function makeContext(seq, results = seq.map((g) => g.result)) {
   const mats = {};
@@ -58,6 +50,13 @@ function fitOneFeature(ctx, train, name) {
 export function fitModel(key, ctx, train, { seeds = [1, 2, 3, 4, 5], net = {} } = {}) {
   const { seq, results, y } = ctx;
   const winRate = (rows) => smoothedRate(rows.reduce((s, i) => s + y[i], 0), rows.length);
+  if (RULES[key]) {
+    return (rows) =>
+      Float64Array.from(rows, (i) => {
+        const call = ruleCall(results, ruleInputs(seq, i, RULES[key]));
+        return call === null ? NaN : call === 1 ? 1 : 0;
+      });
+  }
   switch (key) {
     case 'always_win': {
       const p = winRate(train);
@@ -83,12 +82,6 @@ export function fitModel(key, ctx, train, { seeds = [1, 2, 3, 4, 5], net = {} } 
       return fitOneFeature(ctx, train, 'season_win_pct');
     case 'vegas':
       return fitOneFeature(ctx, train, 'spread');
-    case 'rule_28_10':
-      return (rows) =>
-        Float64Array.from(rows, (i) => {
-          const call = lookbackRule(seq, results, i, 28, 10);
-          return call === null ? NaN : call === 1 ? 1 : 0;
-        });
     default: {
       const spec = MODELS[key];
       if (!spec?.set) throw new Error(`unknown model: ${key}`);

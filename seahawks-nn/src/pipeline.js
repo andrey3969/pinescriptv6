@@ -1,10 +1,12 @@
 import { DATA_FILE, allTeams, isDecided, loadGames, teamSchedule } from './data.js';
 import { featureNames } from './features.js';
 import { runJobs } from './jobs.js';
+import { loadLedger, scoreLedger } from './ledger.js';
 import { MODELS, walkForward } from './models.js';
 import { NET_DEFAULTS } from './nn.js';
 import { predictNext, upcomingRuleCalls } from './predict.js';
-import { gapStructure, intervalScan, lookbackCases } from './scan.js';
+import { RULES, ruleCases } from './rules.js';
+import { gapStructure, intervalScan } from './scan.js';
 import { empiricalP, mcnemar, mean, quantile } from './stats.js';
 
 export const DEFAULTS = {
@@ -33,7 +35,18 @@ export const SENSITIVITY = [
 
 const seedList = (n) => Array.from({ length: n }, (_, k) => k + 1);
 const brief = (g) =>
-  g && { date: g.date, weekday: g.weekday, opp: g.opp, home: g.home, result: g.result, pf: g.pf, pa: g.pa, spread: g.spread };
+  g && {
+    date: g.date,
+    season: g.season,
+    gameType: g.gameType,
+    weekday: g.weekday,
+    opp: g.opp,
+    home: g.home,
+    result: g.result,
+    pf: g.pf,
+    pa: g.pa,
+    spread: g.spread,
+  };
 
 function summarizePerms(runs, models) {
   const real = runs.find((r) => r.perm === 0);
@@ -98,19 +111,31 @@ export async function runAll(options = {}, log = () => {}) {
 
   log(`interval scan: ${o.scanPerms} shuffles`);
   const scan = intervalScan(seq, { from: o.from, to: o.to, nPerm: o.scanPerms });
-  const ruleCases = lookbackCases(seq, { from: o.from, to: o.to }).map((c) => ({
-    game: brief(seq[c.game]),
-    first: brief(seq[c.first]),
-    middle: brief(seq[c.middle]),
-    agree: c.agree,
-    call: c.call,
-    hit: c.hit,
-  }));
+  const cases = Object.fromEntries(
+    Object.entries(RULES).map(([id, rule]) => [
+      id,
+      ruleCases(seq, rule, { from: o.from, to: o.to }).map((c) => ({
+        game: brief(seq[c.game]),
+        older: brief(seq[c.older]),
+        newer: brief(seq[c.newer]),
+        span: seq[c.game].day - seq[c.older].day,
+        call: c.call,
+        hit: c.hit,
+      })),
+    ]),
+  );
 
   log(`all ${allTeams(games).length} teams: interval scan + results-only network`);
   const teams = allTeams(games).map((team) => {
     const s = intervalScan(teamSchedule(games, team), { from: o.from, to: o.to, nPerm: o.teamScanPerms, pairs: false });
-    return { team, rule: s.focus, best: s.chance.bestCombo, perfect: s.chance.perfect.real, rulesTested: s.rulesTested };
+    return {
+      team,
+      rule: s.focus,
+      order: s.order.focus,
+      best: s.chance.bestCombo,
+      perfect: s.chance.perfect.real,
+      rulesTested: s.rulesTested,
+    };
   });
   const teamRuns = await runJobs(
     teams.map(({ team }) => ({ team, perm: 0 })),
@@ -155,11 +180,24 @@ export async function runAll(options = {}, log = () => {}) {
       .sort((a, b) => a.k - b.k)
       .map((r) => ({ label: SENSITIVITY[r.k].label, ...r.metrics.nn_lattice })),
     scan,
-    ruleCases,
+    rules: RULES,
+    cases,
     gaps: gapStructure(seq, { from: o.from, to: o.to }),
     teams,
     next,
-    upcomingRule: upcomingRuleCalls(seq).map((u) => ({ game: brief(u.game), first: brief(u.first), middle: brief(u.middle), status: u.status })),
+    upcomingRule: upcomingRuleCalls(seq).map((u) => ({
+      rule: u.rule,
+      game: brief(u.game),
+      older: brief(u.older),
+      newer: brief(u.newer),
+      status: u.status,
+    })),
+    ledger: scoreLedger(games, loadLedger())
+      .filter((r) => r.team === o.team)
+      .map(({ calls, ...r }) => ({
+        ...r,
+        calls: calls.map((c) => ({ game: brief(c.game), older: brief(c.older), newer: brief(c.newer), call: c.call, hit: c.hit, status: c.status })),
+      })),
     predictions,
     labels: Object.fromEntries(Object.entries(MODELS).map(([k, m]) => [k, m.label])),
     decidedInWindow: inWindow.filter((g) => isDecided(g.result)).length,

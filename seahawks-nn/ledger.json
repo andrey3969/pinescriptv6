@@ -1,0 +1,24 @@
+{
+  "about": "Rules written down on a date. `node cli.js ledger` scores each one only on games played after its registration date: a rule found by searching old results can only be tested fairly on games that had not happened yet. Add a rule by appending an entry with today's date.",
+  "rules": [
+    {
+      "id": "28-10",
+      "team": "SEA",
+      "registered": "2026-09-28",
+      "type": "calendar",
+      "d1": 28,
+      "d2": 10,
+      "text": "If Seattle's results 28 and 10 days before a game agree, predict that result again."
+    },
+    {
+      "id": "gap10-4th",
+      "team": "SEA",
+      "registered": "2026-09-28",
+      "type": "order",
+      "gap": 10,
+      "k": 4,
+      "sameSeason": false,
+      "text": "If Seattle's game is exactly 10 days after its previous game, and the previous and fourth-previous results agree, predict that result again."
+    }
+  ]
+}
