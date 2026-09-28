@@ -26,7 +26,17 @@ const theGame = (g) => `the ${g.weekday} ${g.date} game ${g.home === 1 ? 'vs' : 
 const word = (r) => (r === 1 ? 'win' : 'loss');
 
 // What the rule says about a game, given the two games it compares.
-export function ruleStatus(older, newer, game = null) {
+export function ruleStatus(older, newer, game = null, rule = null) {
+  if (older === newer) {
+    // one input game (lag rules): repeat it, or call the opposite
+    const r = older.result;
+    const flip = rule?.reverse ? -1 : 1;
+    if (r === 0) return 'No call (a tie).';
+    if (r === null) return `Calls ${rule?.reverse ? 'the opposite of' : 'the same result as'} ${theGame(older)}.`;
+    const call = flip * r;
+    if (!game || game.result === null) return `The rule calls a ${word(call)} (${theGame(older)} was a ${word(r)}).`;
+    return game.result === call ? `Called a ${word(call)}: hit.` : `Called a ${word(call)}: miss.`;
+  }
   const [a, b] = [older.result, newer.result];
   if (a === 0 || b === 0) return 'No call (a tie).';
   if (a !== null && b !== null) {
@@ -49,7 +59,7 @@ export function upcomingRuleCalls(seq, rules = RULES) {
       const inputs = ruleInputs(seq, j, rule);
       if (!inputs) continue;
       const [older, newer] = inputs.map((i) => seq[i]);
-      out.push({ rule: id, game: seq[j], older, newer, status: ruleStatus(older, newer) });
+      out.push({ rule: id, game: seq[j], older, newer, status: ruleStatus(older, newer, null, rule) });
     }
   }
   return out;

@@ -44,6 +44,8 @@ node cli.js lab         # lattice lab on all 32 teams -> results/lab.json + latt
 node cli.js lab --quick             # fewer null histories, no calibration or power runs (~3 min)
 node cli.js lab --parts own,power   # recompute only those parts, keep the rest of lab.json
 node cli.js lab-pdf     # rebuild results/lattice-lab.pdf from results/lab.json
+node cli.js intervals   # "a game d days after another reverses it" (d = 4-28): fixed, by the gaps
+                        # in between, carried to the next season, each team's own era (~20 s)
 npm test                # unit tests (leakage, network, statistics, data)
 npm run update-data     # refresh data/games.csv from nflverse on GitHub
 npm run update-data -- ../nfldata/data/games.csv   # ...or from a local clone of nflverse/nfldata

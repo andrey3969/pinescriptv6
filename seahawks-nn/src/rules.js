@@ -5,6 +5,8 @@
 //   order     the game is exactly `gap` days after the previous one, and the
 //             previous game and the k-th previous game agree -> repeat
 //             (sameSeason: all of those games must be in one season)
+//   lag       there was a game exactly `lag` days before -> repeat its result,
+//             or the opposite result when `reverse` is set
 import { isDecided } from './data.js';
 import { scheduleIndex } from './features.js';
 
@@ -16,6 +18,10 @@ export const RULES = {
 // [older, newer] indices of the two games the rule compares for game j,
 // or null when the rule cannot apply to game j.
 export function ruleInputs(seq, j, rule) {
+  if (rule.type === 'lag') {
+    const i = scheduleIndex(seq).byDay.get(seq[j].day - rule.lag);
+    return i === undefined ? null : [i, i];
+  }
   if (rule.type === 'calendar') {
     const { byDay } = scheduleIndex(seq);
     const a = byDay.get(seq[j].day - rule.d1);
@@ -29,10 +35,11 @@ export function ruleInputs(seq, j, rule) {
 }
 
 // The rule's call (1 / -1), or null when the two inputs are not the same result.
-export function ruleCall(results, inputs) {
+export function ruleCall(results, inputs, rule = null) {
   if (!inputs) return null;
   const [a, b] = inputs;
-  return isDecided(results[a]) && results[a] === results[b] ? results[a] : null;
+  if (!isDecided(results[a]) || results[a] !== results[b]) return null;
+  return rule?.reverse ? -results[a] : results[a];
 }
 
 // Every game in seasons [from, to] where the rule's two inputs exist.
@@ -42,7 +49,7 @@ export function ruleCases(seq, rule, { from, to, results = seq.map((g) => g.resu
     if (g.season < from || g.season > to) return;
     const inputs = ruleInputs(seq, j, rule);
     if (!inputs) return;
-    const call = ruleCall(results, inputs);
+    const call = ruleCall(results, inputs, rule);
     out.push({
       game: j,
       older: inputs[0],
@@ -55,6 +62,7 @@ export function ruleCases(seq, rule, { from, to, results = seq.map((g) => g.resu
 }
 
 export function describeRule(rule) {
+  if (rule.type === 'lag') return `a game exactly ${rule.lag} days after another: ${rule.reverse ? 'the opposite result' : 'the same result'}`;
   if (rule.type === 'calendar') return `results ${rule.d1} and ${rule.d2} days before agree`;
   return `${rule.gap} days after the last game, last and ${ordinal(rule.k)}-previous agree${rule.sameSeason ? ' (same season)' : ''}`;
 }

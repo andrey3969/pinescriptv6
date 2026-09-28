@@ -155,3 +155,12 @@ test('a planted lattice is really in the history the engine sees', () => {
   });
   assert.ok(pairs > 200, `${pairs} planted pairs`);
 });
+
+test('interval rules: Seattle games 21 days apart, 1999-2025', async () => {
+  const { intervalRules } = await import('../src/lab/intervals.js');
+  const R = intervalRules(games, { reps: 5 });
+  const row = R.rows.find((r) => r.lag === 21);
+  assert.equal(row.team.reversal.n, 258);
+  assert.equal(row.team.reversal.observed, 125); // 133 repeats, 125 reversals
+  for (const k of ['reversal', 'byGaps', 'carry', 'era']) assert.ok(row.league[k].p > 0 && row.league[k].p <= 1);
+});

@@ -43,6 +43,9 @@ const USAGE = `Seattle Seahawks pattern network (works for any team code)
                          (~12 min; --quick ~3 min; --reps 1000 --placebo-reps 300 --ml-null 20
                          --power-runs 5 --own-null 1000; --parts own,power reruns only those)
   node cli.js lab-pdf    rebuild results/lattice-lab.pdf from results/lab.json
+  node cli.js intervals  "a game d days after another reverses it" for d = 4-28 days: fixed,
+                         by the gaps in between, carried to the next season, and each team's
+                         own era, vs. seasons dealt at random (--team SEA --reps 1000)
 
 options: --team SEA  --from 1999  --to 2025  --test-from 2004  --seeds 5
          --perms 200  --scan-perms 2000  --team-perms 1000  --workers N  --quick`;
@@ -337,7 +340,24 @@ async function labPdf() {
   console.error(res.pdf ? `wrote ${res.pdf}` : res.reason);
 }
 
-const COMMANDS = { report, render, pdf, evaluate, scan, predict, ledger, crossteam, query, lab, 'lab-pdf': labPdf };
+async function intervals() {
+  const { intervalRules } = await import('./src/lab/intervals.js');
+  const R = intervalRules(loadGames(), { team: opts.team, reps: int(args.reps, args.quick ? 200 : 1000) });
+  const fp = (p) => (p < 0.001 ? '< 0.001' : p.toFixed(3));
+  const cell = (x) => (x.n ? `${String(x.n).padStart(5)} ${pct(x.rate).padStart(6)} vs ${pct(x.expectedRate).padStart(6)}  p ${fp(x.p).padEnd(7)}` : '    -'.padEnd(34));
+  console.log(`"A game d days after another reverses it", ${R.from}-${R.to}, against ${R.reps} histories with each season's results dealt at random.`);
+  console.log('Each cell: games, share that went the predicted way vs. the random-order expectation, and p (two-sided).');
+  for (const [scope, name] of [['team', opts.team], ['league', 'all 32 teams']]) {
+    console.log(`\n${name}`);
+    console.log(`${'days'.padEnd(5)}${'reversal every time'.padEnd(35)}${`by the gaps (learned to ${R.split})`.padEnd(35)}${'last season carried over'.padEnd(35)}team's own ${R.from}-${R.split} lean`);
+    for (const row of R.rows) {
+      const x = row[scope];
+      console.log(`${String(row.lag).padEnd(5)}${cell(x.reversal)} ${cell(x.byGaps)} ${cell(x.carry)} ${cell(x.era)}`);
+    }
+  }
+}
+
+const COMMANDS = { report, render, pdf, evaluate, scan, predict, ledger, crossteam, query, lab, 'lab-pdf': labPdf, intervals };
 if (!COMMANDS[cmd]) {
   console.log(USAGE);
   process.exit(cmd ? 1 : 0);

@@ -30,14 +30,14 @@ export function scoreLedger(games, ledger) {
       const inputs = ruleInputs(seq, j, rule);
       if (!inputs) return;
       const [older, newer] = inputs.map((i) => seq[i]);
-      const call = ruleCall(results, inputs);
+      const call = ruleCall(results, inputs, rule);
       calls.push({
         game: g,
         older,
         newer,
         call,
         hit: call !== null && isDecided(g.result) ? g.result === call : null,
-        status: ruleStatus(older, newer, g),
+        status: ruleStatus(older, newer, g, rule),
       });
     });
     const scored = calls.filter((c) => c.hit !== null);

@@ -1,5 +1,5 @@
 {
-  "about": "Rules written down on a date. `node cli.js ledger` scores each one only on games played after its registration date: a rule found by searching old results can only be tested fairly on games that had not happened yet. Two kinds: a team's result rule (calendar / order), and league-wide picks against the point spread (type pick, from the lattice lab), scored as covers of the picked side. Add a rule by appending an entry with today's date.",
+  "about": "Rules written down on a date. `node cli.js ledger` scores each one only on games played after its registration date: a rule found by searching old results can only be tested fairly on games that had not happened yet. Two kinds: a team's result rule (calendar, order, or lag: the game exactly d days before, repeated or reversed), and league-wide picks against the point spread (type pick, from the lattice lab), scored as covers of the picked side. Add a rule by appending an entry with today's date.",
   "rules": [
     {
       "id": "28-10",
@@ -19,6 +19,15 @@
       "k": 4,
       "sameSeason": false,
       "text": "If Seattle's game is exactly 10 days after its previous game, and the previous and fourth-previous results agree, predict that result again."
+    },
+    {
+      "id": "21-reversal",
+      "team": "SEA",
+      "registered": "2026-09-28",
+      "type": "lag",
+      "lag": 21,
+      "reverse": true,
+      "text": "From the handwritten 21-day blocks (2024 season: 6 reversals in 8 pairs): when Seattle plays a game exactly 21 days after another, predict the opposite result of that earlier game."
     },
     {
       "id": "ats-rest3",

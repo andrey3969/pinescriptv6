@@ -74,3 +74,17 @@ test('back-to-back gaps follow the weekday grid', () => {
   assert.ok(gaps.get(10).moves.every((m) => m.move === 'Thu -> Sun'));
   assert.ok(gaps.get(7).n > 250);
 });
+
+test('lag rules repeat or reverse the game exactly d days before', () => {
+  const games = loadGames();
+  const sea = teamSchedule(games, 'SEA');
+  const base = sea.map((g) => g.result);
+  const j = sea.findIndex((g) => g.date === '2024-10-27'); // 21 days after 2024-10-06 (a loss)
+  const inputs = ruleInputs(sea, j, { type: 'lag', lag: 21 });
+  assert.equal(sea[inputs[0]].date, '2024-10-06');
+  assert.equal(ruleCall(base, inputs, { type: 'lag', lag: 21 }), -1);
+  assert.equal(ruleCall(base, inputs, { type: 'lag', lag: 21, reverse: true }), 1);
+  const cases = ruleCases(sea, { type: 'lag', lag: 21, reverse: true }, { from: 2024, to: 2024 }).filter((c) => c.hit !== null);
+  assert.equal(cases.length, 8); // the handwritten 2024 page: 8 pairs, 6 reversals
+  assert.equal(cases.filter((c) => c.hit).length, 6);
+});
