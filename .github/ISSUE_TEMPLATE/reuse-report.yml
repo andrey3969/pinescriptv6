@@ -1,0 +1,54 @@
+name: Report public reuse
+description: Share verifiable integration of ChronoForge or ChronoForgeMath in your project.
+title: "[Reuse] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form only after your project actually uses the code. A report is reviewed before anything is added to the adoption register. Stars, unchanged forks, downloads, plans, and maintainer-owned demos are not independent integrations. Share public links only; security reports belong in private vulnerability reporting.
+  - type: input
+    id: project-url
+    attributes:
+      label: Public project URL
+      description: A repository or published script whose source can be inspected.
+      placeholder: https://github.com/your-account/your-project
+    validations:
+      required: true
+  - type: textarea
+    id: use-sites
+    attributes:
+      label: Links to actual code use
+      description: Permalinks to the copied functions or import and the places your code calls them. Prefer an exact commit.
+    validations:
+      required: true
+  - type: input
+    id: source-revision
+    attributes:
+      label: Source revision used
+      description: The pinescriptv6 commit, release, or published library version you reused.
+    validations:
+      required: true
+  - type: textarea
+    id: purpose
+    attributes:
+      label: What your project uses it for
+      description: Explain how the code is integrated and whether it is modified. No trading-performance claims are required.
+    validations:
+      required: true
+  - type: dropdown
+    id: relationship
+    attributes:
+      label: Relationship to pinescriptv6
+      options:
+        - Independent project
+        - Project with a shared maintainer or collaborator
+        - Maintainer-owned example or test
+    validations:
+      required: true
+  - type: checkboxes
+    id: evidence
+    attributes:
+      label: Evidence check
+      options:
+        - label: The links show actual source use, and the relationship above is accurate.
+          required: true
