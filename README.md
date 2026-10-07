@@ -4,16 +4,36 @@ TradingView Pine Script v6 indicators.
 
 ## ChronoForge
 
-`ChronoForge.pine` — a multi-timeframe trend & momentum "forge" that blends
-three time perspectives into one normalized score (−100…+100):
+[ChronoForge.pine](ChronoForge.pine) blends three components into a smoothed
+directional score (−100…+100 once sufficient data is available):
 
 1. **Trend** — fast/slow EMA spread measured on a higher timeframe, ATR-normalized.
 2. **Momentum** — RSI re-centered around zero.
-3. **Chrono** — trading-session context (Asia / London / New York) that amplifies
-   the prevailing directional pressure.
+3. **Session context** — a directional boost during configurable session windows.
+   The session names are labels; their times use the symbol's exchange timezone.
 
 The blended, smoothed score drives a colored oscillator, threshold lines, bias
-flip labels, a status table, and `LONG`/`SHORT` alerts.
+flip labels, a status table, and `LONG`/`SHORT` alert conditions. It is an indicator
+for evaluation, with no established trading performance.
+
+![ChronoForge in a separate TradingView QA layout](ChronoForge-preview.jpg)
+
+## Install and evaluate
+
+1. Open [ChronoForge.pine](ChronoForge.pine), select **Raw**, and copy the source.
+2. Create a separate TradingView chart layout and a new Pine Editor indicator.
+3. Replace the template with this source, save it, and select **Add to chart**.
+4. Start with default inputs on a standard 5-minute candle chart. The default
+   requested timeframe is 60 minutes. This is a demonstration setup, not a
+   performance recommendation.
+
+Read the [quick start and calculation details](QUICKSTART.md) before interpreting
+signals. The current bar and requested higher-timeframe values can change before
+their candles close; this script is **not non-repainting**.
+
+The [validation record](VALIDATION.md) reports the native compile and display
+checks. [Adoption evidence](ADOPTION.md) records verified public reuse separately
+from publication and popularity.
 
 ### Inputs
 - **Trend Forge** — higher timeframe, fast/slow EMA lengths, trend weight.
