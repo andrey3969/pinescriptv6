@@ -35,3 +35,7 @@ Pine Script source and documentation.
 Use [GitHub Issues](https://github.com/andrey3969/pinescriptv6/issues) for ordinary
 bugs, questions, and feature requests. For a potential security vulnerability,
 follow the [security policy](SECURITY.md) and use private reporting.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
