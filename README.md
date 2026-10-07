@@ -20,6 +20,13 @@ for evaluation, with no established trading performance.
 
 ## Install and evaluate
 
+The [public open-source TradingView publication](https://www.tradingview.com/script/BMW6dSsX-ChronoForge-Multi-Timeframe-Trend-and-Momentum/)
+is available under **Andreyt4**. Open it and use **Add to favorites** to find it
+from TradingView, or evaluate it with **Use on chart** in a separate layout.
+The publication includes the approved MIT notice in its source.
+
+For a local working copy, follow these steps:
+
 1. Open [ChronoForge.pine](ChronoForge.pine), select **Raw**, and copy the source.
 2. Create a separate TradingView chart layout and a new Pine Editor indicator.
 3. Replace the template with this source, save it, and select **Add to chart**.

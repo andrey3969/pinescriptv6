@@ -3,8 +3,22 @@
 ## Verified status — 2026-10-07
 
 **Independently verified external dependent projects: 0.** No external public
-project using this source has been supplied or verified. The maintainer also
-confirmed that the indicator had not yet been published on TradingView.
+project using this source has been supplied or verified.
+
+## Public distribution
+
+- [ChronoForge on TradingView](https://www.tradingview.com/script/BMW6dSsX-ChronoForge-Multi-Timeframe-Trend-and-Momentum/):
+  published on 2026-10-07 at approximately 5:27 PM America/Chicago by **Andreyt4**,
+  with open source, the MIT notice, a chart, and a self-contained description.
+- [GitHub evaluation release v0.1.0](https://github.com/andrey3969/pinescriptv6/releases/tag/v0.1.0):
+  source and documentation distributed in a checked ZIP package.
+
+Both publications are maintainer-owned distribution channels. Neither is counted
+as an independent external dependent project. Publication is verified; approval
+for community-feed discovery or any verification program is not established by
+this record.
+
+## Dependency measurement
 
 GitHub's [Dependents page](https://github.com/andrey3969/pinescriptv6/network/dependents)
 was observed with **0 repositories and 0 packages**. This is a time-bound snapshot,
