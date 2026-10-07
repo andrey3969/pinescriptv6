@@ -18,6 +18,14 @@ as an independent external dependent project. Publication is verified; approval
 for community-feed discovery or any verification program is not established by
 this record.
 
+## Reuse preparation
+
+The repository now includes `ChronoForgeMath`, an importable-library candidate,
+a documented API, a higher-timeframe consumer and a contract harness. A private
+QA version passed 325 native imported-library assertions; the consumer also
+compiled and ran. Public TradingView library publication is blocked by the account plan. These maintainer-owned assets make integration easier but contribute
+**zero** to the external dependent register.
+
 ## Dependency measurement
 
 GitHub's [Dependents page](https://github.com/andrey3969/pinescriptv6/network/dependents)

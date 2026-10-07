@@ -1,0 +1,78 @@
+//@version=6
+// MIT License
+// 
+// Copyright (c) 2026 andrey3969
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+//@description Weighted trend/momentum scoring without data requests or trading side effects. Callers supply their own timeframe, session, smoothing, and alert policy.
+library("ChronoForgeMath", overlay = false)
+
+// @function Normalize an EMA spread by a caller-provided ATR. Nonpositive or unavailable ATR returns zero, matching ChronoForge's guard.
+// @param fastEma Caller-provided fast EMA.
+// @param slowEma Caller-provided slow EMA.
+// @param atrValue Caller-provided ATR in the same price units.
+// @returns Unclamped spread in ATR units, or zero when ATR is not positive. Missing EMAs propagate when ATR is positive.
+export normalizedSpread(float fastEma, float slowEma, float atrValue) =>
+    atrValue > 0 ? (fastEma - slowEma) / atrValue : 0.0
+
+// @function Combine clamped ATR-normalized trend and centered RSI with one optional directional session boost. The configured session weight stays in the denominator.
+// @param spreadInAtr Unclamped normalized EMA spread; typically from normalizedSpread().
+// @param rsiValue Caller-provided RSI, centered as (RSI - 50) / 50 and clamped.
+// @param activeSession Whether the caller wants the single session boost applied on this bar.
+// @param trendWeight Nonnegative trend weight; default 1.5.
+// @param momentumWeight Nonnegative momentum weight; default 1.0.
+// @param sessionWeight Nonnegative configured session weight; default 0.5. Use zero to remove it from numerator and denominator.
+// @returns Unsmooth score in -100..100 for finite valid inputs. Missing or negative weights return na; all-zero weights return zero even during warmup. Missing data otherwise propagates.
+export score(float spreadInAtr, float rsiValue, bool activeSession, float trendWeight = 1.5, float momentumWeight = 1.0, float sessionWeight = 0.5) =>
+    float result = na
+    bool validWeights = not na(trendWeight) and not na(momentumWeight) and not na(sessionWeight) and trendWeight >= 0 and momentumWeight >= 0 and sessionWeight >= 0
+    if validWeights
+        float largestWeight = math.max(trendWeight, math.max(momentumWeight, sessionWeight))
+        if largestWeight == 0
+            result := 0.0
+        else
+            // Rescale weights first so a large finite weight sum does not overflow.
+            float tw = trendWeight / largestWeight
+            float mw = momentumWeight / largestWeight
+            float sw = sessionWeight / largestWeight
+            float denominator = tw + mw + sw
+            float trend = math.max(-1.0, math.min(1.0, spreadInAtr)) * tw
+            float momentum = math.max(-1.0, math.min(1.0, (rsiValue - 50.0) / 50.0)) * mw
+            float directional = trend + momentum
+            float boost = activeSession ? sw : 0.0
+            result := (directional + boost * (directional >= 0 ? 1.0 : -1.0)) / denominator * 100.0
+    result
+
+// @function Classify a score with disjoint LONG/SHORT boundaries. Invalid or missing inputs return na rather than a misleading state.
+// @param normalizedScore A caller-provided raw or smoothed score.
+// @param threshold Strictly positive threshold at most 100; default 20.
+// @returns 1 for LONG, -1 for SHORT, 0 for FLAT, or na for an unavailable score or invalid threshold.
+export bias(float normalizedScore, float threshold = 20.0) =>
+    int result = na
+    if not na(normalizedScore) and not na(threshold) and threshold > 0 and threshold <= 100
+        result := normalizedScore >= threshold ? 1 : normalizedScore <= -threshold ? -1 : 0
+    result
+
+// Demo only: chart-timeframe EMAs/ATR/RSI, no session boost, no smoothing.
+// This is not the full higher-timeframe ChronoForge indicator.
+float demoSpread = normalizedSpread(ta.ema(close, 21), ta.ema(close, 55), ta.atr(14))
+float demoScore = score(demoSpread, ta.rsi(close, 14), false, sessionWeight = 0.0)
+plot(demoScore, "Example raw score", color = color.teal)
+hline(0, "Zero", color = color.gray)

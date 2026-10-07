@@ -1,0 +1,87 @@
+//@version=6
+// MIT License
+// 
+// Copyright (c) 2026 andrey3969
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+indicator("ChronoForgeMath contract checks", overlay = false)
+// Requires the public library publication. Maintainer-owned validation only.
+import Andreyt4/ChronoForgeMath/1 as cf
+
+near(float actual, float expected) =>
+    not na(actual) and math.abs(actual - expected) <= 0.0000001
+
+check(bool ok, string label) =>
+    if not ok
+        runtime.error("Contract check failed: " + label)
+    1
+
+var int passed = 0
+if barstate.isfirst
+    passed += check(near(cf.normalizedSpread(103.0, 100.0, 2.0), 1.5), "spread scale")
+    passed += check(near(cf.normalizedSpread(97.0, 100.0, 2.0), -1.5), "negative spread")
+    passed += check(near(cf.normalizedSpread(103.0, 100.0, 0.0), 0.0), "zero ATR guard")
+    passed += check(near(cf.normalizedSpread(103.0, 100.0, -2.0), 0.0), "negative ATR guard")
+    passed += check(near(cf.normalizedSpread(103.0, 100.0, float(na)), 0.0), "missing ATR guard")
+    passed += check(na(cf.normalizedSpread(float(na), 100.0, 2.0)), "missing EMA propagation")
+    passed += check(near(cf.score(1.0, 100.0, true), 100.0), "positive saturation")
+    passed += check(near(cf.score(-1.0, 0.0, true), -100.0), "negative saturation")
+    passed += check(near(cf.score(500.0, 1000.0, true), 100.0), "positive outlier clamp")
+    passed += check(near(cf.score(-500.0, -1000.0, true), -100.0), "negative outlier clamp")
+    passed += check(near(cf.score(1.0, 100.0, false), 250.0 / 3.0), "inactive session denominator")
+    passed += check(near(cf.score(1.0, 100.0, false, sessionWeight = 0.0), 100.0), "remove session weight")
+    passed += check(near(cf.score(0.0, 50.0, false), 0.0), "neutral no session")
+    passed += check(near(cf.score(0.0, 50.0, true), 50.0 / 3.0), "zero direction positive boost")
+    passed += check(near(cf.score(float(na), float(na), true, 0.0, 0.0, 0.0), 0.0), "all-zero warmup")
+    passed += check(near(cf.score(0.5, 50.0, false, 1.5, 0.0, 0.0), 50.0), "trend only")
+    passed += check(near(cf.score(0.0, 75.0, false, 0.0, 1.0, 0.0), 50.0), "momentum only")
+    passed += check(na(cf.score(float(na), 50.0, false)), "missing spread")
+    passed += check(na(cf.score(0.0, float(na), false)), "missing RSI")
+    passed += check(na(cf.score(0.0, 50.0, false, -1.0, 1.0, 0.5)), "negative weight")
+    passed += check(na(cf.score(0.0, 50.0, false, float(na), 1.0, 0.5)), "missing weight")
+    passed += check(cf.bias(20.0) == 1, "inclusive long boundary")
+    passed += check(cf.bias(-20.0) == -1, "inclusive short boundary")
+    passed += check(cf.bias(19.999) == 0, "inside positive boundary")
+    passed += check(cf.bias(-19.999) == 0, "inside negative boundary")
+    passed += check(cf.bias(0.0) == 0, "valid neutral")
+    passed += check(na(cf.bias(0.0, 0.0)), "zero threshold rejected")
+    passed += check(na(cf.bias(0.0, -1.0)), "negative threshold rejected")
+    passed += check(na(cf.bias(0.0, 101.0)), "oversize threshold rejected")
+    passed += check(na(cf.bias(float(na))), "missing score rejected")
+    passed += check(na(cf.bias(0.0, float(na))), "missing threshold rejected")
+    passed += check(cf.bias(100.0, 100.0) == 1, "maximum long threshold")
+    passed += check(cf.bias(-100.0, 100.0) == -1, "maximum short threshold")
+    // Properties over a grid, including outliers and the exactly-neutral case.
+    for sp in array.from(-5.0, -1.0, -0.3, 0.0, 0.3, 1.0, 5.0)
+        for rv in array.from(-25.0, 0.0, 25.0, 50.0, 75.0, 100.0, 125.0)
+            for active in array.from(false, true)
+                float s = cf.score(sp, rv, active)
+                passed += check(not na(s) and s >= -100.0000001 and s <= 100.0000001, "bounded output")
+                passed += check(near(s, cf.score(sp, rv, active, 1.5e20, 1.0e20, 0.5e20)), "weight scale invariance")
+                if not near(cf.score(sp, rv, false), 0.0)
+                    passed += check(near(cf.score(-sp, 100.0 - rv, active), -s), "nonzero direction symmetry")
+
+var table status = table.new(position.top_right, 2, 2)
+if barstate.islast
+    table.cell(status, 0, 0, "Contract", text_color = color.white, bgcolor = color.green)
+    table.cell(status, 1, 0, "PASS", text_color = color.white, bgcolor = color.green)
+    table.cell(status, 0, 1, "Assertions", text_color = color.white)
+    table.cell(status, 1, 1, str.tostring(passed), text_color = color.white)
+plot(passed, "Passed assertions", color = color.green)

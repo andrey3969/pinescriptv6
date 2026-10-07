@@ -1,6 +1,6 @@
 # pinescriptv6
 
-TradingView Pine Script v6 indicators.
+TradingView Pine Script v6 indicators and reusable scoring functions.
 
 ## ChronoForge
 
@@ -47,6 +47,19 @@ from publication and popularity.
 - **Momentum** — RSI length and weight.
 - **Chrono / Sessions** — toggle session weighting, session windows, session boost.
 - **Output** — score smoothing and signal threshold.
+
+## Reusable scoring library
+
+[ChronoForgeMath.pine](ChronoForgeMath.pine) extracts the score calculation into
+three documented exports for other developers: ATR-normalized EMA spread,
+weighted trend/momentum score, and LONG/SHORT/FLAT classification. Callers control
+market data requests, timeframes, sessions, smoothing and alerts.
+
+**Public TradingView library publication is blocked by the account plan.** TradingView
+currently requires a paid plan to publish it. Its private QA copy passed 325 imported-library assertions and the higher-timeframe consumer
+compiled and ran in Pine v6. The planned public import cannot be used until the
+library is published. Read the [API and integration guide](REUSE.md) and
+[validation record](REUSE_VALIDATION.md) for exact behavior and limitations.
 
 ## Maintenance
 

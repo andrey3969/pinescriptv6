@@ -1,0 +1,47 @@
+//@version=6
+// MIT License
+// 
+// Copyright (c) 2026 andrey3969
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+//@description Personal integration example: the caller supplies timeframes, session logic, smoothing, and alert conditions.
+indicator("ChronoForgeMath integration example", overlay = false)
+import Andreyt4/ChronoForgeMath/1 as cf
+
+string trendTf = input.timeframe("60", "Trend timeframe")
+int fastLen = input.int(21, "Fast EMA", minval = 1)
+int slowLen = input.int(55, "Slow EMA", minval = 1)
+int rsiLen = input.int(14, "RSI", minval = 1)
+int smoothLen = input.int(5, "Smoothing", minval = 1)
+float threshold = input.float(20.0, "Threshold", minval = 0.1, maxval = 100.0)
+
+// Unconfirmed higher-timeframe values can repaint. This request does not
+// establish historical/realtime equivalence; lookahead_off alone is insufficient.
+[fast, slow] = request.security(syminfo.tickerid, trendTf, [ta.ema(close, fastLen), ta.ema(close, slowLen)], lookahead = barmerge.lookahead_off)
+float spread = cf.normalizedSpread(fast, slow, ta.atr(14))
+// This example removes session weighting. Callers can supply their own session flag.
+float raw = cf.score(spread, ta.rsi(close, rsiLen), false, sessionWeight = 0.0)
+float smoothed = ta.ema(raw, smoothLen)
+int state = cf.bias(smoothed, threshold)
+color c = na(state) ? color.gray : state == 1 ? color.teal : state == -1 ? color.red : color.gray
+plot(smoothed, "Score", color = c, linewidth = 2)
+hline(0, "Zero")
+hline(threshold, "Long threshold")
+hline(-threshold, "Short threshold")
