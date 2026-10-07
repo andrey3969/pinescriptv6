@@ -55,8 +55,16 @@ three documented exports for other developers: ATR-normalized EMA spread,
 weighted trend/momentum score, and LONG/SHORT/FLAT classification. Callers control
 market data requests, timeframes, sessions, smoothing and alerts.
 
+**Available now without a library import:** open the
+[standalone example](ChronoForgeMath-standalone.pine), select **Raw**, copy it into
+a new Pine Editor indicator, save, and add it to a separate chart. Developers
+can copy just the [function snippet](ChronoForgeMath-functions.txt) into an
+existing script. The snippet preserves the MIT notice and uses `cf_` prefixes.
+Read the [copy-and-paste instructions](REUSE.md#use-now-without-a-public-library).
+
 **Public TradingView library publication is blocked by the account plan.** TradingView
-currently requires a paid plan to publish it. Its private QA copy passed 325 imported-library assertions and the higher-timeframe consumer
+currently requires a paid plan to publish it. Its private QA copy passed 325
+imported-library assertions and the higher-timeframe consumer
 compiled and ran in Pine v6. The planned public import cannot be used until the
 library is published. Read the [API and integration guide](REUSE.md) and
 [validation record](REUSE_VALIDATION.md) for exact behavior and limitations.

@@ -3,6 +3,8 @@
 ## Status
 
 The library source is available for review and reuse under the MIT License.
+**Copy-and-paste integration is available now:** the standalone example and
+function snippet do not import a TradingView library.
 **The public TradingView library publication is blocked by the account plan.** TradingView displayed a paid-plan requirement when Public was selected on
 2026-10-07. The `Andreyt4/ChronoForgeMath/1` import below will work only after
 public publication; it is not available yet.
@@ -43,7 +45,40 @@ The classifier intentionally requires `0 < threshold <= 100`, avoiding the
 original indicator's overlapping LONG/SHORT conditions at a zero threshold.
 Treat `na` as unavailable data or a configuration problem rather than a trade.
 
-## Consumer example
+## Use now without a public library
+
+1. Open [ChronoForgeMath-standalone.pine](ChronoForgeMath-standalone.pine), select
+   **Raw**, and copy the complete file.
+2. In a separate personal TradingView chart, create a new Pine Editor indicator,
+   paste the file, save, and select **Add to chart**. This path needs no public
+   library import.
+3. To integrate into your own script, copy
+   [ChronoForgeMath-functions.txt](ChronoForgeMath-functions.txt) below your
+   existing `indicator()`, `strategy()`, or `library()` declaration. Keep your
+   script's single `//@version=6` line and declaration. The text file is a snippet,
+   not a complete indicator.
+
+The copied functions are named `cf_normalizedSpread`, `cf_score`, and `cf_bias`.
+Their bodies match the library, with only the `export` qualifiers removed and
+function names prefixed. Supply your own series, then use:
+
+```pine
+spread = cf_normalizedSpread(myFastEma, mySlowEma, myAtr)
+raw = cf_score(spread, myRsi, false, sessionWeight=0.0)
+state = cf_bias(ta.ema(raw, 5), 20.0)
+```
+
+The complete example uses chart-timeframe EMA/ATR/RSI, configurable weights,
+EMA smoothing, and no session weighting. It plots the score without alerts or
+orders. Open candles can change. It is an integration demonstration rather than
+a replacement for the original higher-timeframe/session indicator. The copied
+functions passed the same 325 assertions natively in Pine v6.
+
+Keep the MIT notice and credit the source revision you copied. Copied code does
+not update automatically: inspect upstream changes before updating your copy.
+Version-pinned imports remain an alternative after public library publication.
+
+## Future imported consumer example
 
 After the public library is published, this minimal script imports its functions:
 
@@ -76,7 +111,8 @@ After public publication, the [contract harness](ChronoForgeMath-contract-checks
 can be loaded in a separate personal chart to repeat the assertions.
 
 If your independent public project actually uses this library, you may report
-that use in a GitHub issue with a permalink to its import and call sites,
+that use through the [public-reuse report form](https://github.com/andrey3969/pinescriptv6/issues/new?template=reuse-report.yml)
+with a permalink to its copied functions or import and call sites,
 publication/repository URL, and purpose. A maintainer can then inspect and record
 it in [ADOPTION.md](ADOPTION.md). Maintainer-owned examples and tests are excluded.
 There is no reward or benefit for creating artificial dependencies.

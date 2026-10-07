@@ -45,6 +45,26 @@ compile together; it does not test trading outcomes or create outside adoption.
 
 ![Candidate library demonstration](ChronoForgeMath-preview.jpg)
 
+## Standalone copy check — 2026-10-07
+
+A local contract harness with copied functions, no imports, and the existing
+numeric assertions ran in TradingView Pine v6. The chart displayed
+**Contract PASS — Assertions 325**. The copied function bodies match the library
+exactly after accounting for the `cf_` prefixes and removed `export` qualifiers.
+
+![Standalone numeric assertions](ChronoForgeMath-standalone-contract-pass.jpg)
+
+The complete `ChronoForgeMath-standalone.pine` indicator also reported
+**Compiled.** and **Added to chart.** with default inputs in a separate personal
+QA layout. Its saved editor source was copied back and matched the delivered
+file byte for byte. The score and threshold lines displayed.
+
+![Standalone integration demonstration](ChronoForgeMath-standalone-preview.jpg)
+
+This path does not depend on the pending public library namespace. The full
+standalone script and the function-only snippet both preserve the MIT notice.
+Neither this example nor its test creates independent external adoption.
+
 ## Scope and limitations
 
 These assertions verify the exported numeric contract for the tested inputs.

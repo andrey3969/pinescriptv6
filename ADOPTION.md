@@ -26,6 +26,14 @@ QA version passed 325 native imported-library assertions; the consumer also
 compiled and ran. Public TradingView library publication is blocked by the account plan. These maintainer-owned assets make integration easier but contribute
 **zero** to the external dependent register.
 
+A standalone example and copyable function snippet allow integration without a
+public TradingView library import. The copied function bodies passed 325 native
+assertions and the standalone indicator compiled and displayed. Developers can
+report completed public integrations using the
+[reuse report form](https://github.com/andrey3969/pinescriptv6/issues/new?template=reuse-report.yml).
+Each report still requires inspection before registration; it is not counted
+automatically.
+
 ## Dependency measurement
 
 GitHub's [Dependents page](https://github.com/andrey3969/pinescriptv6/network/dependents)
