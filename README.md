@@ -20,3 +20,18 @@ flip labels, a status table, and `LONG`/`SHORT` alerts.
 - **Momentum** — RSI length and weight.
 - **Chrono / Sessions** — toggle session weighting, session windows, session boost.
 - **Output** — score smoothing and signal threshold.
+
+## Maintenance
+
+**Project and security maintainer:** [Andrey (@andrey3969)](https://github.com/andrey3969).
+
+The maintainer is responsible for reviewing changes to this repository,
+receiving and assessing security reports, and coordinating fixes and disclosures
+when a security issue is confirmed. This responsibility covers this repository's
+Pine Script source and documentation.
+
+## Reporting issues
+
+Use [GitHub Issues](https://github.com/andrey3969/pinescriptv6/issues) for ordinary
+bugs, questions, and feature requests. For a potential security vulnerability,
+follow the [security policy](SECURITY.md) and use private reporting.
